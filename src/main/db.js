@@ -70,6 +70,16 @@ export function setSettings(patch) {
 
 // ---- project metadata -----------------------------------------------------
 
+// How many projects currently use each status, for the "in use" delete warning.
+export function getStatusCounts() {
+  const rows = db
+    .prepare("SELECT status, COUNT(*) AS n FROM project_meta WHERE status IS NOT NULL AND status <> '' GROUP BY status")
+    .all()
+  const map = {}
+  for (const r of rows) map[r.status] = r.n
+  return map
+}
+
 export function getAllMeta() {
   const rows = db.prepare('SELECT * FROM project_meta').all()
   const map = {}
@@ -82,6 +92,21 @@ export function getAllMeta() {
     }
   }
   return map
+}
+
+// Propagate status renames and deletions across all stored metadata.
+// renames: { oldName: newName }; deletions: [name] -> status set to NULL.
+export function applyStatusChanges({ renames = {}, deletions = [] } = {}, now) {
+  const ts = now ?? Date.now()
+  const renameStmt = db.prepare('UPDATE project_meta SET status = ?, updated_at = ? WHERE status = ?')
+  const delStmt = db.prepare('UPDATE project_meta SET status = NULL, updated_at = ? WHERE status = ?')
+  const tx = db.transaction(() => {
+    for (const [oldName, newName] of Object.entries(renames)) {
+      if (oldName !== newName) renameStmt.run(newName, ts, oldName)
+    }
+    for (const name of deletions) delStmt.run(ts, name)
+  })
+  tx()
 }
 
 export function setProjectMeta(relPath, patch, now) {

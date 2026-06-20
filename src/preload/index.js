@@ -4,8 +4,10 @@ const api = {
   getSettings: () => ipcRenderer.invoke('settings:get'),
   setSettings: (patch) => ipcRenderer.invoke('settings:set', patch),
 
-  scanProjects: () => ipcRenderer.invoke('projects:scan'),
+  list: (relPath) => ipcRenderer.invoke('fs:list', relPath),
   setProjectMeta: (relPath, patch) => ipcRenderer.invoke('meta:set', relPath, patch),
+  statusCounts: () => ipcRenderer.invoke('meta:statusCounts'),
+  applyStatusChanges: (changes) => ipcRenderer.invoke('meta:applyStatusChanges', changes),
 
   selectRoot: () => ipcRenderer.invoke('dialog:selectRoot'),
   selectApp: () => ipcRenderer.invoke('dialog:selectApp'),

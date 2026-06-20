@@ -1,12 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtemp, mkdir, writeFile, utimes, rm } from 'node:fs/promises'
+import { gzipSync } from 'node:zlib'
 import os from 'node:os'
 import path from 'node:path'
 import {
   findProjects,
+  listDir,
   pickVersions,
   pickExports,
-  buildProject
+  buildProject,
+  parseAbletonVersion,
+  readAlsVersion
 } from '../src/main/scanner/index.js'
 
 let root
@@ -211,5 +215,64 @@ describe('findProjects (filesystem)', () => {
     await touch(path.join(root, 'Weird', 'Backup', 'Old.als'))
     const projects = await findProjects(root)
     expect(projects).toHaveLength(0)
+  })
+})
+
+describe('listDir (navigation)', () => {
+  it('separates projects from navigable folders, both alphabetical', async () => {
+    await touch(path.join(root, 'Direct Song Project', 'Direct Song.als'))
+    await touch(path.join(root, '_ABLETON_12', 'Nested Project', 'Nested.als'))
+    await mkdir(path.join(root, 'Collab', 'sub'), { recursive: true })
+
+    const { folders, projects } = await listDir(root, '')
+    expect(folders.map((f) => f.name)).toEqual(['_ABLETON_12', 'Collab'])
+    expect(projects.map((p) => p.name)).toEqual(['Direct Song'])
+  })
+
+  it('lists the contents of a navigated subfolder', async () => {
+    await touch(path.join(root, '_ABLETON_12', 'Nested Project', 'Nested.als'))
+    const { folders, projects } = await listDir(root, '_ABLETON_12')
+    expect(folders).toHaveLength(0)
+    expect(projects.map((p) => p.name)).toEqual(['Nested'])
+    expect(projects[0].relPath).toBe(path.join('_ABLETON_12', 'Nested Project'))
+  })
+
+  it('reports immediate child count for folders', async () => {
+    await touch(path.join(root, 'Genre', 'A Project', 'A.als'))
+    await touch(path.join(root, 'Genre', 'B Project', 'B.als'))
+    const { folders } = await listDir(root, '')
+    expect(folders[0].childCount).toBe(2)
+  })
+})
+
+describe('parseAbletonVersion', () => {
+  it('parses the Creator attribute', () => {
+    const tag = '<Ableton MajorVersion="5" MinorVersion="11.0_11300" Creator="Ableton Live 11.3.12" Revision="x">'
+    expect(parseAbletonVersion(tag)).toEqual({ major: 11, full: '11.3.12' })
+  })
+  it('parses Live 12', () => {
+    expect(parseAbletonVersion('<Ableton Creator="Ableton Live 12.1">').major).toBe(12)
+  })
+  it('falls back to MinorVersion when no Creator', () => {
+    expect(parseAbletonVersion('<Ableton MinorVersion="10.0_10100">')).toEqual({ major: 10, full: '10' })
+  })
+  it('returns null when nothing matches', () => {
+    expect(parseAbletonVersion('<nope>')).toBeNull()
+  })
+})
+
+describe('readAlsVersion (gzip)', () => {
+  it('reads version from a gzipped .als header', async () => {
+    const xml =
+      '<?xml version="1.0" encoding="UTF-8"?>\n<Ableton MajorVersion="5" MinorVersion="11.0_11300" Creator="Ableton Live 11.3.12" Revision="x">\n<LiveSet>'
+    const p = path.join(root, 'song.als')
+    await writeFile(p, gzipSync(Buffer.from(xml)))
+    expect(await readAlsVersion(p)).toEqual({ major: 11, full: '11.3.12' })
+  })
+
+  it('returns null for a non-gzip file', async () => {
+    const p = path.join(root, 'bad.als')
+    await writeFile(p, 'not gzip at all')
+    expect(await readAlsVersion(p)).toBeNull()
   })
 })

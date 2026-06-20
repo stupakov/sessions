@@ -13,7 +13,7 @@ import { cn } from '../lib/utils.js'
  *  - disabled: disables the whole control
  *  - title: tooltip for the main button
  */
-export default function SplitButton({ icon, label, onClick, items = [], disabled, title }) {
+export default function SplitButton({ icon, label, badge, onClick, items = [], disabled, title }) {
   const hasMenu = items.length > 0
   return (
     <div className="inline-flex items-stretch">
@@ -23,13 +23,14 @@ export default function SplitButton({ icon, label, onClick, items = [], disabled
         disabled={disabled}
         title={title || label}
         className={cn(
-          'inline-flex max-w-[220px] items-center gap-1.5 rounded-l-md border border-border bg-white px-2.5 py-1 text-xs font-medium',
+          'inline-flex max-w-[240px] items-center gap-1.5 rounded-l-md border border-border bg-white px-2.5 py-1 text-xs font-medium',
           'hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40',
           !hasMenu && 'rounded-r-md'
         )}
       >
         {icon}
         <span className="truncate">{label}</span>
+        {badge}
       </button>
       {hasMenu && (
         <DropdownMenu.Root>

@@ -1,8 +1,15 @@
 import { execFile } from 'node:child_process'
 import path from 'node:path'
 import { ipcMain, dialog, shell, BrowserWindow } from 'electron'
-import { findProjects } from './scanner/index.js'
-import { getSettings, setSettings, getAllMeta, setProjectMeta } from './db.js'
+import { listDir } from './scanner/index.js'
+import {
+  getSettings,
+  setSettings,
+  getAllMeta,
+  setProjectMeta,
+  applyStatusChanges,
+  getStatusCounts
+} from './db.js'
 import { mlog } from './logger.js'
 
 // Wrap an ipcMain.handle callback with logging + error capture so failures show
@@ -37,24 +44,24 @@ function openWithApp(absPath, appPath) {
   })
 }
 
-async function scanProjects() {
+async function listFolder(relPath = '') {
   const settings = getSettings()
   if (!settings.root) {
-    mlog('info', 'scan: no root folder set')
-    return []
+    mlog('info', 'list: no root folder set')
+    return { relPath: '', root: null, folders: [], projects: [] }
   }
   const t = Date.now()
-  const projects = await findProjects(settings.root)
+  const res = await listDir(settings.root, relPath)
   const meta = getAllMeta()
-  const withExport = projects.filter((p) => p.exports.default).length
-  mlog(
-    'info',
-    `scan: ${projects.length} projects (${withExport} with exports) in ${Date.now() - t}ms — ${settings.root}`
-  )
-  return projects.map((p) => ({
+  const projects = res.projects.map((p) => ({
     ...p,
     meta: meta[p.relPath] ?? { status: null, rating: 0, notes: '', updatedAt: 0 }
   }))
+  mlog(
+    'info',
+    `list "${relPath || '/'}": ${res.folders.length} folders, ${projects.length} projects in ${Date.now() - t}ms`
+  )
+  return { relPath: res.relPath, root: settings.root, folders: res.folders, projects }
 }
 
 export function registerIpc() {
@@ -64,11 +71,19 @@ export function registerIpc() {
     return setSettings(patch)
   })
 
-  handle('projects:scan', () => scanProjects())
+  handle('fs:list', (_e, relPath) => listFolder(relPath || ''))
 
   handle('meta:set', (_e, relPath, patch) => {
     mlog('info', `meta:set ${relPath} ${JSON.stringify(patch)}`)
     return setProjectMeta(relPath, patch)
+  })
+
+  handle('meta:statusCounts', () => getStatusCounts())
+
+  handle('meta:applyStatusChanges', (_e, changes) => {
+    mlog('info', `applyStatusChanges ${JSON.stringify(changes)}`)
+    applyStatusChanges(changes)
+    return true
   })
 
   handle('dialog:selectRoot', async () => {

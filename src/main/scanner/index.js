@@ -1,4 +1,6 @@
 import { readdir, stat } from 'node:fs/promises'
+import { createReadStream } from 'node:fs'
+import { createGunzip } from 'node:zlib'
 import path from 'node:path'
 
 // Subfolders inside a project that must never be treated as projects or scanned
@@ -113,6 +115,113 @@ export function buildProject(dir, root, files) {
     modifiedMs: latest ? latest.mtimeMs : 0,
     exports
   }
+}
+
+// Parse the Ableton version out of the first chunk of a decompressed .als. The
+// root tag looks like: <Ableton MajorVersion="5" MinorVersion="11.0_11300"
+// Creator="Ableton Live 11.3.12" ...>. `Creator` is the human app version; the
+// MinorVersion prefix is a reliable fallback. MajorVersion is the file schema, not
+// the app, so it is NOT used.
+export function parseAbletonVersion(head) {
+  let m = head.match(/Creator="Ableton Live ([0-9]+)((?:\.[0-9]+)*)/)
+  if (m) return { major: Number(m[1]), full: m[1] + (m[2] || '') }
+  m = head.match(/MinorVersion="([0-9]+)\./)
+  if (m) return { major: Number(m[1]), full: m[1] }
+  return null
+}
+
+// Extract the complete root opening tag <Ableton ...> from accumulated text, or
+// null if it isn't fully present yet. This is the deterministic stop condition:
+// the version attributes always live inside this one tag.
+function extractAbletonTag(data) {
+  const open = data.indexOf('<Ableton')
+  if (open === -1) return null
+  const close = data.indexOf('>', open)
+  if (close === -1) return null
+  return data.slice(open, close + 1)
+}
+
+/**
+ * Read the Ableton version a .als was saved with. Decompresses only until the root
+ * <Ableton ...> opening tag is fully read, then stops — deterministic, not a fixed
+ * byte budget. READ-ONLY. Resolves null on error or timeout (e.g. an online-only
+ * Dropbox file that can't be hydrated quickly). `safetyCapBytes` only guards against
+ * a malformed/non-Ableton file that never produces the tag.
+ */
+export function readAlsVersion(filePath, { timeoutMs = 1500, safetyCapBytes = 65536 } = {}) {
+  return new Promise((resolve) => {
+    let data = ''
+    let settled = false
+    const stream = createReadStream(filePath)
+    const gunzip = createGunzip()
+    const finish = (val) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      stream.destroy()
+      gunzip.destroy()
+      resolve(val)
+    }
+    const timer = setTimeout(() => finish(null), timeoutMs)
+    stream.on('error', () => finish(null))
+    gunzip.on('error', () => finish(null))
+    gunzip.on('data', (chunk) => {
+      data += chunk.toString('latin1')
+      const tag = extractAbletonTag(data)
+      if (tag) finish(parseAbletonVersion(tag))
+      else if (data.length >= safetyCapBytes) finish(null)
+    })
+    gunzip.on('end', () => finish(parseAbletonVersion(extractAbletonTag(data) || '')))
+    stream.pipe(gunzip)
+  })
+}
+
+/**
+ * List a single directory for Finder-style navigation. Returns its immediate
+ * subfolders split into `projects` (folders that directly contain a .als) and
+ * `folders` (everything else — navigable). Does not recurse. `relPath` is the path
+ * of the directory being listed, relative to `root` ('' = root).
+ */
+export async function listDir(root, relPath = '') {
+  const absDir = path.join(root, relPath)
+  const { dirs } = await readEntries(absDir)
+  const folders = []
+  const projects = []
+  for (const sub of dirs) {
+    if (isIgnoredDir(sub)) continue
+    const subAbs = path.join(absDir, sub)
+    const entries = await readEntries(subAbs)
+    const isProject = entries.files.some((f) => lowerExt(f.name) === ALS_EXT)
+    if (isProject) {
+      projects.push(buildProject(subAbs, root, entries.files))
+    } else {
+      let mtimeMs = 0
+      try {
+        mtimeMs = (await stat(subAbs)).mtimeMs
+      } catch {
+        /* ignore */
+      }
+      const childCount = entries.dirs.filter((d) => !isIgnoredDir(d)).length
+      folders.push({
+        kind: 'folder',
+        name: sub,
+        relPath: path.relative(root, subAbs),
+        mtimeMs,
+        childCount
+      })
+    }
+  }
+  // Detect the Ableton version for each project's latest .als (the one on the Open
+  // button). Done in parallel; read-only and resilient.
+  await Promise.all(
+    projects.map(async (p) => {
+      if (p.latestVersion) p.ableton = await readAlsVersion(p.latestVersion.path)
+    })
+  )
+
+  folders.sort((a, b) => a.name.localeCompare(b.name))
+  projects.sort((a, b) => a.name.localeCompare(b.name))
+  return { relPath, folders, projects }
 }
 
 /**
