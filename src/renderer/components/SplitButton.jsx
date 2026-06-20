@@ -50,7 +50,8 @@ export default function SplitButton({ icon, label, onClick, items = [], disabled
             <DropdownMenu.Content
               align="end"
               sideOffset={4}
-              className="z-50 min-w-[200px] max-w-[360px] overflow-hidden rounded-md border border-border bg-white p-1 shadow-lg"
+              collisionPadding={8}
+              className="z-50 min-w-[200px] max-w-[360px] overflow-y-auto overflow-x-hidden rounded-md border border-border bg-white p-1 shadow-lg max-h-[min(18rem,var(--radix-dropdown-menu-content-available-height))]"
             >
               {items.map((it) => (
                 <DropdownMenu.Item

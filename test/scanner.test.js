@@ -85,6 +85,18 @@ describe('pickExports', () => {
     const files = [{ name: 'Song.WAV', path: '/p/Song.WAV', mtimeMs: 100 }]
     expect(pickExports(files, stems).default.name).toBe('Song.WAV')
   })
+
+  it('lists all exports newest-first across formats, but defaults to newest wav', () => {
+    const files = [
+      { name: 'Song.wav', path: '/p/Song.wav', mtimeMs: 100 },
+      { name: 'Song 2.mp3', path: '/p/Song 2.mp3', mtimeMs: 400 },
+      { name: 'Song 3.wav', path: '/p/Song 3.wav', mtimeMs: 300 },
+      { name: 'Song 2.wav', path: '/p/Song 2.wav', mtimeMs: 200 }
+    ]
+    const { default: def, all } = pickExports(files, stems)
+    expect(all.map((f) => f.name)).toEqual(['Song 2.mp3', 'Song 3.wav', 'Song 2.wav', 'Song.wav'])
+    expect(def.name).toBe('Song 3.wav') // newest wav, not the newer mp3
+  })
 })
 
 describe('buildProject', () => {

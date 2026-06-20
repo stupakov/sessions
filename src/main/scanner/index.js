@@ -82,10 +82,12 @@ export function pickExports(files, allowedStems) {
     }))
 
   const byNewest = (a, b) => b.mtimeMs - a.mtimeMs
-  const wav = matched.filter((f) => f.ext === 'wav').sort(byNewest)
-  const mp3 = matched.filter((f) => f.ext === 'mp3').sort(byNewest)
-  const all = [...wav, ...mp3]
-  const def = wav[0] ?? mp3[0] ?? null
+  // Default still prefers the newest WAV (falling back to newest MP3)...
+  const def = matched.filter((f) => f.ext === 'wav').sort(byNewest)[0] ??
+    matched.filter((f) => f.ext === 'mp3').sort(byNewest)[0] ??
+    null
+  // ...but the dropdown lists every export strictly newest → oldest.
+  const all = matched.sort(byNewest)
   return { default: def, all }
 }
 
