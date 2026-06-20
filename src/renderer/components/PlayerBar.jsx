@@ -12,6 +12,8 @@ function fmtTime(s) {
 // In-app audio player bar. Shows only when `track` (an absolute file path) is set.
 export default function PlayerBar({ track, onClose }) {
   const audioRef = useRef(null)
+  const barRef = useRef(null)
+  const draggingRef = useRef(false)
   const [playing, setPlaying] = useState(false)
   const [time, setTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -33,9 +35,13 @@ export default function PlayerBar({ track, onClose }) {
   if (!track) return null
 
   const fileName = track.split('/').pop()
+  const setDur = (e) => {
+    const d = e.currentTarget.duration
+    if (Number.isFinite(d)) setDuration(d)
+  }
   const seekBy = (d) => {
     const a = audioRef.current
-    if (a) a.currentTime = Math.max(0, Math.min((a.duration || Infinity), a.currentTime + d))
+    if (a) a.currentTime = Math.max(0, Math.min(a.duration || Infinity, a.currentTime + d))
   }
   const restart = () => {
     const a = audioRef.current
@@ -50,14 +56,35 @@ export default function PlayerBar({ track, onClose }) {
     if (a.paused) a.play()
     else a.pause()
   }
-  const scrub = (e) => {
+
+  // Seek by clicking / dragging the timeline.
+  const seekToClientX = (clientX) => {
     const a = audioRef.current
-    if (!a || !a.duration) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    a.currentTime = ((e.clientX - rect.left) / rect.width) * a.duration
+    const bar = barRef.current
+    if (!a || !bar || !Number.isFinite(a.duration) || a.duration <= 0) return
+    const rect = bar.getBoundingClientRect()
+    const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
+    a.currentTime = ratio * a.duration
+    setTime(a.currentTime)
+  }
+  const onPointerDown = (e) => {
+    draggingRef.current = true
+    e.currentTarget.setPointerCapture(e.pointerId)
+    seekToClientX(e.clientX)
+  }
+  const onPointerMove = (e) => {
+    if (draggingRef.current) seekToClientX(e.clientX)
+  }
+  const onPointerUp = (e) => {
+    draggingRef.current = false
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {
+      /* ignore */
+    }
   }
 
-  const pct = duration ? (time / duration) * 100 : 0
+  const pct = duration > 0 ? Math.min(100, (time / duration) * 100) : 0
 
   return (
     <div className="flex items-center gap-3 border-t border-border bg-white px-4 py-2">
@@ -69,7 +96,8 @@ export default function PlayerBar({ track, onClose }) {
         onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}
         onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
-        onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+        onLoadedMetadata={setDur}
+        onDurationChange={setDur}
       />
 
       <div className="flex items-center gap-1">
@@ -94,13 +122,26 @@ export default function PlayerBar({ track, onClose }) {
       <span className="w-12 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
         {fmtTime(time)}
       </span>
+
+      {/* Timeline: click or drag the dot to transport */}
       <div
-        onClick={scrub}
-        className="group relative h-1.5 flex-1 cursor-pointer rounded-full bg-muted"
+        ref={barRef}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        className="relative flex h-4 flex-1 cursor-pointer touch-none items-center"
         title="Seek"
       >
-        <div className="absolute inset-y-0 left-0 rounded-full bg-primary" style={{ width: `${pct}%` }} />
+        <div className="relative h-1.5 w-full rounded-full bg-muted">
+          <div className="absolute inset-y-0 left-0 rounded-full bg-primary" style={{ width: `${pct}%` }} />
+          <div
+            className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-primary shadow"
+            style={{ left: `${pct}%` }}
+          />
+        </div>
       </div>
+
       <span className="w-12 shrink-0 text-xs tabular-nums text-muted-foreground">{fmtTime(duration)}</span>
 
       <span className="min-w-0 max-w-[22rem] flex-shrink truncate text-xs font-medium" title={fileName}>

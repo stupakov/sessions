@@ -1,6 +1,8 @@
 import path from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
-import { app, shell, BrowserWindow, protocol, net } from 'electron'
+import { fileURLToPath } from 'node:url'
+import { createReadStream, statSync } from 'node:fs'
+import { Readable } from 'node:stream'
+import { app, shell, BrowserWindow, protocol } from 'electron'
 import { initDb, setSettings } from './db.js'
 import { registerIpc } from './ipc.js'
 import { buildAppMenu } from './menu.js'
@@ -77,11 +79,44 @@ if (!gotLock) {
     setSettings({ appVersion: app.getVersion() }) // record which version last wrote the config
     mlog('info', `app v${app.getVersion()} ready; userData=${app.getPath('userData')}`)
 
-    // Serve local audio files to the in-app player. URL: media://local/<encoded abs path>
+    // Serve local audio files to the in-app player with explicit Content-Length and
+    // HTTP Range support, so the <audio> element knows the duration and can seek.
+    // URL: media://local/<encoded abs path>
     protocol.handle('media', (request) => {
-      const encoded = request.url.slice('media://local/'.length)
-      const absPath = decodeURIComponent(encoded)
-      return net.fetch(pathToFileURL(absPath).toString())
+      const absPath = decodeURIComponent(request.url.slice('media://local/'.length))
+      let size
+      try {
+        size = statSync(absPath).size
+      } catch {
+        return new Response('Not found', { status: 404 })
+      }
+      const type = absPath.toLowerCase().endsWith('.mp3') ? 'audio/mpeg' : 'audio/wav'
+      const rangeHeader = request.headers.get('range')
+      const m = rangeHeader && /bytes=(\d*)-(\d*)/.exec(rangeHeader)
+      if (m) {
+        let start = m[1] ? parseInt(m[1], 10) : 0
+        let end = m[2] ? parseInt(m[2], 10) : size - 1
+        if (!Number.isFinite(start) || start < 0) start = 0
+        if (!Number.isFinite(end) || end >= size) end = size - 1
+        const stream = createReadStream(absPath, { start, end })
+        return new Response(Readable.toWeb(stream), {
+          status: 206,
+          headers: {
+            'Content-Type': type,
+            'Accept-Ranges': 'bytes',
+            'Content-Range': `bytes ${start}-${end}/${size}`,
+            'Content-Length': String(end - start + 1)
+          }
+        })
+      }
+      return new Response(Readable.toWeb(createReadStream(absPath)), {
+        status: 200,
+        headers: {
+          'Content-Type': type,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': String(size)
+        }
+      })
     })
     // In dev the dock shows the Electron icon; set ours from the PNG.
     if (process.platform === 'darwin' && !app.isPackaged && app.dock) {
