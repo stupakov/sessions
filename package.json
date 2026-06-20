@@ -16,6 +16,7 @@
     "setup": "npm install --ignore-scripts && node node_modules/electron/install.js && npm run rebuild",
     "test": "vitest run",
     "test:watch": "vitest",
+    "check": "vitest run && electron-vite build",
     "pack:mac": "electron-vite build && electron-builder --mac --dir",
     "dist": "electron-vite build && electron-builder --mac",
     "install:mac": "bash scripts/install-mac.sh"

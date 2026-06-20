@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { app, shell, BrowserWindow } from 'electron'
 import { initDb, setSettings } from './db.js'
 import { registerIpc } from './ipc.js'
+import { buildAppMenu } from './menu.js'
 import { mlog } from './logger.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -74,6 +75,7 @@ if (!gotLock) {
       }
     }
     registerIpc()
+    buildAppMenu()
     createWindow()
 
     app.on('activate', () => {

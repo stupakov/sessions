@@ -1,6 +1,7 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { Check, ChevronDown } from 'lucide-react'
 import { cn } from '../lib/utils.js'
+import BoldDigits from './BoldDigits.jsx'
 
 /**
  * A select-style dropdown that fills its container width. Choosing an item only
@@ -28,7 +29,9 @@ export default function RowSelect({ items = [], value, onChange, badge, placehol
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         <button className={cn(triggerClass, 'font-medium outline-none hover:bg-muted')}>
-          <span className="flex-1 truncate text-left">{label}</span>
+          <span className="flex-1 truncate text-left">
+            <BoldDigits text={label} />
+          </span>
           {badge}
           <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
         </button>
@@ -47,7 +50,9 @@ export default function RowSelect({ items = [], value, onChange, badge, placehol
               className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-xs outline-none data-[highlighted]:bg-muted"
             >
               <div className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate font-medium">{it.label}</span>
+                <span className="truncate font-medium">
+                  <BoldDigits text={it.label} />
+                </span>
                 {it.sublabel && (
                   <span className="truncate text-[11px] text-muted-foreground">{it.sublabel}</span>
                 )}
