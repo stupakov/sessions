@@ -1,0 +1,16 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Black rounded-square background (macOS-style margin + corner radius).
+       macOS does NOT auto-round icons (unlike iOS) — the rounding is baked in. -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="#000000"/>
+  <!-- White circle -->
+  <circle cx="512" cy="512" r="350" fill="#ffffff"/>
+  <!-- Sessions mark: two staggered groups of the Ableton bars, BOTH horizontal, so
+       after the 45° clockwise rotation all bars run top-left → bottom-right, in
+       parallel (mirror of the vertical-bar variant). Black. -->
+  <g transform="translate(512 512) rotate(45) scale(11) translate(-16.5 -16.5)" fill="#000000">
+    <!-- group A: horizontal bars, upper-left -->
+    <path d="M0 0h21v3H0zM0 6h21v3H0zM0 12h21v3H0zM0 18h21v3H0z"/>
+    <!-- group B: horizontal bars, offset +12,+12 (lower-right) -->
+    <path d="M12 12h21v3h-21zM12 18h21v3h-21zM12 24h21v3h-21zM12 30h21v3h-21z"/>
+  </g>
+</svg>

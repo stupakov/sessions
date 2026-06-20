@@ -7,8 +7,11 @@ import { mlog } from './logger.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-// Display name (dock / menu / About in packaged builds).
+// Display name (dock / menu / About in packaged builds). Note: in `npm run dev`
+// the menu bar still shows "Electron" because that's the running bundle's name;
+// the packaged Sessions.app shows "Sessions" correctly.
 app.setName('Sessions')
+app.setAboutPanelOptions({ applicationName: 'Sessions', applicationVersion: app.getVersion() })
 // Pin the data dir to a stable internal id so renaming the app never moves the
 // DB/config and it survives upgrades. userData =>
 // ~/Library/Application Support/ableton-song-manager/

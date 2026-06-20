@@ -4,9 +4,9 @@ node_modules/
 # Build output
 dist/
 out/
-build/
 release/
 *.app
+# Note: build/ holds the app icon resources (icon.svg/png/icns) and IS tracked.
 
 # Logs
 *.log

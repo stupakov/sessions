@@ -97,7 +97,7 @@ export default function ProjectsTable({
   const isEmpty = folders.length === 0 && projects.length === 0
 
   return (
-    <table className="w-full table-fixed border-collapse text-sm">
+    <table className="w-full min-w-[80rem] table-fixed border-collapse text-sm">
       <thead className="sticky top-0 z-10 bg-white">
         <tr className="select-none border-b border-border text-left text-xs text-muted-foreground">
           {COLUMNS.map((col) => (
