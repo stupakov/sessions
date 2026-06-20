@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Play, Music, Folder, ChevronRight, ChevronUp, ChevronDown, StickyNote } from 'lucide-react'
-import SplitButton from './SplitButton.jsx'
+import RowSelect from './RowSelect.jsx'
+import AbletonIcon from './AbletonIcon.jsx'
 import StarRating from './StarRating.jsx'
 import StatusSelect from './StatusSelect.jsx'
 import { formatDate, cn } from '../lib/utils.js'
@@ -12,12 +13,27 @@ function VersionPill({ ableton }) {
     <span
       title={`Ableton Live ${ableton.full}`}
       className={cn(
-        'ml-1 shrink-0 rounded px-1 py-px text-[9px] font-bold leading-none',
+        'shrink-0 rounded px-1 py-px text-[9px] font-bold leading-none',
         abletonColor(ableton.major)
       )}
     >
       {ableton.major}
     </span>
+  )
+}
+
+// Square launch button: black icon on white, matching the dropdown border.
+function SquareButton({ onClick, disabled, title, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-white text-black hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      {children}
+    </button>
   )
 }
 
@@ -62,6 +78,9 @@ export default function ProjectsTable({
   onOpenExport
 }) {
   const [sort, setSort] = useState({ key: 'name', dir: 'asc' })
+  // Session-only selection per row (resets to newest on restart / fresh mount).
+  const [selVer, setSelVer] = useState({})
+  const [selExp, setSelExp] = useState({})
 
   const sorted = useMemo(() => {
     const arr = [...projects].sort((a, b) => compare(a, b, sort.key))
@@ -133,7 +152,6 @@ export default function ProjectsTable({
 
         {/* Projects */}
         {sorted.map((p) => {
-          const exp = p.exports.default
           return (
             <tr key={p.relPath} className="border-b border-border/60 hover:bg-muted/40">
               <td className="px-3 py-2">
@@ -173,33 +191,59 @@ export default function ProjectsTable({
                 {formatDate(p.modifiedMs)}
               </td>
               <td className="px-3 py-2">
-                <SplitButton
-                  label={p.latestVersion?.name || '—'}
-                  badge={<VersionPill ableton={p.ableton} />}
-                  title={`Open ${p.latestVersion?.name || ''} in Ableton${p.ableton ? ` (Live ${p.ableton.full})` : ''}`}
-                  onClick={() => onOpenProject(p.latestVersion.path)}
-                  items={p.versions.map((v) => ({
-                    key: v.path,
-                    label: v.name,
-                    sublabel: formatDate(v.mtimeMs),
-                    onSelect: () => onOpenProject(v.path)
-                  }))}
-                />
+                {(() => {
+                  const cur = selVer[p.relPath] ?? p.latestVersion?.path
+                  const isLatest = cur === p.latestVersion?.path
+                  return (
+                    <div className="flex w-[15rem] items-stretch gap-1">
+                      <div className="min-w-0 flex-1">
+                        <RowSelect
+                          items={p.versions.map((v) => ({
+                            key: v.path,
+                            label: v.name,
+                            sublabel: formatDate(v.mtimeMs)
+                          }))}
+                          value={cur}
+                          onChange={(k) => setSelVer((s) => ({ ...s, [p.relPath]: k }))}
+                          badge={isLatest ? <VersionPill ableton={p.ableton} /> : null}
+                        />
+                      </div>
+                      <SquareButton
+                        title="Open in Ableton"
+                        disabled={!cur}
+                        onClick={() => cur && onOpenProject(cur)}
+                      >
+                        <AbletonIcon className="h-4 w-4" />
+                      </SquareButton>
+                    </div>
+                  )
+                })()}
               </td>
               <td className="px-3 py-2">
-                <SplitButton
-                  icon={<Play className="h-3.5 w-3.5" />}
-                  label={exp ? exp.name : 'No export'}
-                  title={exp ? `Play ${exp.name}` : 'No export found'}
-                  disabled={!exp}
-                  onClick={() => exp && onOpenExport(exp.path)}
-                  items={p.exports.all.map((e) => ({
-                    key: e.path,
-                    label: e.name,
-                    sublabel: `${e.ext.toUpperCase()} · ${formatDate(e.mtimeMs)}`,
-                    onSelect: () => onOpenExport(e.path)
-                  }))}
-                />
+                {(() => {
+                  const cur = selExp[p.relPath] ?? p.exports.default?.path
+                  const hasExp = p.exports.all.length > 0
+                  return (
+                    <div className="flex w-[15rem] items-stretch gap-1">
+                      <div className="min-w-0 flex-1">
+                        <RowSelect
+                          items={p.exports.all.map((e) => ({
+                            key: e.path,
+                            label: e.name,
+                            sublabel: `${e.ext.toUpperCase()} · ${formatDate(e.mtimeMs)}`
+                          }))}
+                          value={cur}
+                          onChange={(k) => setSelExp((s) => ({ ...s, [p.relPath]: k }))}
+                          placeholder="No export"
+                          disabled={!hasExp}
+                        />
+                      </div>
+                      <SquareButton title="Play export" disabled={!cur} onClick={() => cur && onOpenExport(cur)}>
+                        <Play className="h-4 w-4 fill-current" />
+                      </SquareButton>
+                    </div>
+                  )
+                })()}
               </td>
             </tr>
           )
