@@ -15,6 +15,7 @@ export default function SettingsDialog({
   open,
   onOpenChange,
   onChangeRoot,
+  onSetApp,
   onSave
 }) {
   const [wavApp, setWavApp] = useState(null)
@@ -32,9 +33,17 @@ export default function SettingsDialog({
     }
   }, [settings, open])
 
-  async function pickApp(setter) {
+  // App choices persist immediately (not on Save) so they can't be lost.
+  async function pickApp(key, setter) {
     const p = await window.api.selectApp()
-    if (p) setter(p)
+    if (p) {
+      setter(p)
+      onSetApp?.({ [key]: p })
+    }
+  }
+  function resetApp(key, setter) {
+    setter(null)
+    onSetApp?.({ [key]: null })
   }
 
   const updateRow = (id, val) => setRows((rs) => rs.map((r) => (r.id === id ? { ...r, name: val } : r)))
@@ -83,7 +92,9 @@ export default function SettingsDialog({
       if (!ok) return
     }
 
-    onSave({ wavApp, mp3App, statuses: newNames, renames, deletions })
+    // wavApp/mp3App are persisted immediately on pick, so they are intentionally
+    // NOT part of this Save — that prevents a status save from clobbering them.
+    onSave({ statuses: newNames, renames, deletions })
     onOpenChange(false)
   }
 
@@ -128,22 +139,22 @@ export default function SettingsDialog({
               </h3>
               <div className="space-y-2">
                 {[
-                  ['WAV', wavApp, setWavApp],
-                  ['MP3', mp3App, setMp3App]
-                ].map(([label, val, setter]) => (
+                  ['WAV', 'wavApp', wavApp, setWavApp],
+                  ['MP3', 'mp3App', mp3App, setMp3App]
+                ].map(([label, key, val, setter]) => (
                   <div key={label} className="flex items-center gap-2">
                     <span className="w-12 text-xs font-medium">{label}</span>
                     <code className="flex-1 truncate rounded-md bg-muted px-2 py-1.5 text-xs">
                       {basenameApp(val)}
                     </code>
                     <button
-                      onClick={() => pickApp(setter)}
+                      onClick={() => pickApp(key, setter)}
                       className="rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-muted"
                     >
                       Choose…
                     </button>
                     <button
-                      onClick={() => setter(null)}
+                      onClick={() => resetApp(key, setter)}
                       title="Use system default"
                       className="rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-muted"
                     >
@@ -211,16 +222,21 @@ export default function SettingsDialog({
             </section>
           </div>
 
-          <div className="mt-6 flex justify-end gap-2">
-            <Dialog.Close className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted">
-              Cancel
-            </Dialog.Close>
-            <button
-              onClick={save}
-              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
-            >
-              Save
-            </button>
+          <div className="mt-6 flex items-center gap-2">
+            <span className="text-[11px] text-muted-foreground">
+              Ableton Song Manager v{settings?.appVersion || '—'}
+            </span>
+            <div className="ml-auto flex gap-2">
+              <Dialog.Close className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted">
+                Cancel
+              </Dialog.Close>
+              <button
+                onClick={save}
+                className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+              >
+                Save
+              </button>
+            </div>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

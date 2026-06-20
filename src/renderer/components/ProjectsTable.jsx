@@ -115,11 +115,7 @@ export default function ProjectsTable({
               <span className="inline-flex items-center gap-2 font-medium">
                 <Folder className="h-4 w-4 text-amber-500" />
                 {f.name}
-                {f.childCount > 0 && (
-                  <span className="text-[11px] font-normal text-muted-foreground">
-                    {f.childCount} item{f.childCount === 1 ? '' : 's'}
-                  </span>
-                )}
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
               </span>
             </td>
             <td className="px-3 py-2" />
@@ -128,9 +124,10 @@ export default function ProjectsTable({
             <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
               {formatDate(f.mtimeMs)}
             </td>
-            <td className="px-3 py-2" colSpan={2}>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <td className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground">
+              folder: {f.childCount} item{f.childCount === 1 ? '' : 's'}
             </td>
+            <td className="px-3 py-2" />
           </tr>
         ))}
 

@@ -1,6 +1,6 @@
 {
   "name": "ableton-song-manager",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Read-only manager for a folder of Ableton Live projects",
   "author": "Alex Stupakov",
   "license": "MIT",

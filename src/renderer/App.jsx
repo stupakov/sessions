@@ -127,6 +127,15 @@ export default function App() {
     [cwd, loadDir, loadUsage]
   )
 
+  // Persist a single setting immediately (used for WAV/MP3 app choices).
+  const setAppSetting = useCallback(async (patch) => {
+    try {
+      setSettings(await window.api.setSettings(patch))
+    } catch (e) {
+      logError('setSettings (app) failed:', e)
+    }
+  }, [])
+
   const openProject = useCallback((p) => window.api.openProject(p).catch((e) => logError(e)), [])
   const openExport = useCallback((p) => window.api.openExport(p).catch((e) => logError(e)), [])
 
@@ -248,6 +257,7 @@ export default function App() {
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         onChangeRoot={chooseRoot}
+        onSetApp={setAppSetting}
         onSave={saveSettings}
       />
     </div>

@@ -38,6 +38,28 @@ The music folder is touched only by read APIs (`fs.readdir`, `fs.stat`) and
 (SQLite db, settings) lives in Electron `userData`. This is an invariant — verify it
 stays true on every change.
 
+## Storage location & upgrade safety
+
+All app state lives in **`app.getPath('userData')`**, which on macOS is
+`~/Library/Application Support/ableton-song-manager/` — the canonical place for
+per-app data. It contains `songlist.db` (+ `-wal`/`-shm` WAL sidecars).
+
+This directory lives **outside** the `.app` bundle, so it **survives app upgrades
+and re-installs** (replacing/reinstalling the `.app` never touches it). Data is only
+lost if the user deletes that folder or the app's *name* changes.
+
+To keep the location stable, `main/index.js` calls `app.setName('ableton-song-manager')`
+before any path lookup. This is important because a packaged build's `productName`
+("Ableton Song Manager") would otherwise change `getName()` — and thus the userData
+folder — versus dev. Pinning the name makes dev and packaged share one DB forever.
+
+A **single-instance lock** (`app.requestSingleInstanceLock()`) prevents two app
+instances from opening the same DB and clobbering each other's settings.
+
+The current **app version** (`app.getVersion()`, from `package.json`) is written to
+the `appVersion` setting on every startup, so the config records which version last
+wrote it (useful for future migrations) and the UI can display it.
+
 ## Data model (SQLite, `userData/songlist.db`)
 
 ```
