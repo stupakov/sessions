@@ -6,7 +6,7 @@ design and Ableton-folder research.
 ## ⛔️ CRITICAL INVARIANT: the Ableton projects folder is READ-ONLY
 
 The app indexes a user-chosen folder of Ableton Live projects (e.g.
-`~/Dropbox/Music/AbletonProjects`). **This folder, and everything inside it, must
+`~/Music/AbletonProjects`). **This folder, and everything inside it, must
 NEVER be modified by this app — ever.** No creating, writing, appending, renaming,
 moving, deleting, or changing permissions/timestamps of any file or directory under
 the music root. The app only:
@@ -48,8 +48,8 @@ The only legitimate "writes" are SQL statements against the app's own SQLite DB.
 
 ## Conventions
 
-- Keep scanner logic pure and covered by tests; verify behavior against the real
-  library described in `docs/ableton-folder-survey.md` when in doubt.
+- Keep scanner logic pure and covered by tests; see
+  `docs/ableton-project-structure.md` for the Ableton conventions to verify against.
 - Run `npm test` before committing changes to the scanner.
 - Status colors are index-based (`src/renderer/lib/statusColors.js`) so they stay
   stable across renames and follow the user's status ordering.

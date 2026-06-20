@@ -89,9 +89,8 @@ npm run dist         # build a distributable .dmg in ./dist
 
 ## How it identifies projects, versions, and exports
 
-Derived from real-folder research — see
-[docs/ableton-project-structure.md](./docs/ableton-project-structure.md) and
-[docs/ableton-folder-survey.md](./docs/ableton-folder-survey.md).
+See [docs/ableton-project-structure.md](./docs/ableton-project-structure.md) for the
+Ableton on-disk conventions this is derived from.
 
 - **Project** = a folder directly containing ≥1 `.als`. `Backup/`, `Samples/`,
   `Ableton Project Info/`, and dot-folders are skipped. Folder names ending in

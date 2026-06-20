@@ -1,14 +1,13 @@
 # Ableton Live Project Structure — Research Notes
 
 > Reference knowledge for how Ableton organizes projects on disk. This drives the
-> app's scanning, version-detection, and export-matching logic. Last updated:
-> 2026-06-19. Sources listed at the bottom.
+> app's scanning, version-detection, and export-matching logic. Sources listed at
+> the bottom.
 >
-> ✅ **Verified against the real library** (~198 projects) — see
-> [ableton-folder-survey.md](./ableton-folder-survey.md). Notable confirmations:
-> project folders are named `"<name> Project"` (the suffix is stripped for display),
-> versioning is highly varied (so "latest" = most-recently-modified `.als`, not the
-> highest number), and convention-following exports match a version stem exactly.
+> Notable conventions this app relies on: project folders are named
+> `"<name> Project"` (the suffix is stripped for display), versioning is highly
+> varied (so "latest" = most-recently-modified `.als`, not the highest number), and
+> convention-following exports match a version stem exactly.
 
 ## TL;DR for this app
 

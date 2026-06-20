@@ -120,7 +120,7 @@ describe('buildProject', () => {
     expect(p.exports.default.name).toBe('Song 2.wav')
   })
 
-  it('matches a per-version export by stem (real demo-style case)', () => {
+  it('matches a per-version export by stem (dated-name case)', () => {
     const dir = '/music/2024-03-17-demo Project'
     const files = [
       { name: '2024-03-17-demo.als', path: dir + '/2024-03-17-demo.als', mtimeMs: 100 },

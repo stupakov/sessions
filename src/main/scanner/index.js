@@ -15,7 +15,7 @@ export const ALS_EXT = '.als'
 export const EXPORT_EXTS = ['.wav', '.mp3']
 // The only file types we care about. Everything else (.asd sidecars, .aif samples,
 // .amxd, .DS_Store, …) is skipped so we never stat the thousands of irrelevant
-// files in real libraries. See docs/ableton-folder-survey.md.
+// files in real libraries. See docs/ableton-project-structure.md.
 const RELEVANT_EXTS = new Set([ALS_EXT, ...EXPORT_EXTS])
 
 const stem = (name) => name.slice(0, name.length - path.extname(name).length)
