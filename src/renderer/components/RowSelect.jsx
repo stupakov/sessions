@@ -18,7 +18,10 @@ export default function RowSelect({ items = [], value, onChange, badge, placehol
 
   if (isDisabled) {
     return (
-      <div className={cn(triggerClass, 'cursor-not-allowed text-muted-foreground opacity-60')}>
+      <div
+        title={placeholder}
+        className={cn(triggerClass, 'cursor-not-allowed text-muted-foreground opacity-60')}
+      >
         <span className="flex-1 truncate text-left">{placeholder}</span>
         <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
       </div>
@@ -28,7 +31,7 @@ export default function RowSelect({ items = [], value, onChange, badge, placehol
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
-        <button className={cn(triggerClass, 'font-medium outline-none hover:bg-muted')}>
+        <button title={label} className={cn(triggerClass, 'font-medium outline-none hover:bg-muted')}>
           <span className="flex-1 truncate text-left">
             <BoldDigits text={label} />
           </span>
@@ -46,6 +49,7 @@ export default function RowSelect({ items = [], value, onChange, badge, placehol
           {items.map((it) => (
             <DropdownMenu.Item
               key={it.key}
+              title={it.label}
               onSelect={() => onChange(it.key)}
               className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-xs outline-none data-[highlighted]:bg-muted"
             >

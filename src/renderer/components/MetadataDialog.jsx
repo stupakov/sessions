@@ -27,7 +27,7 @@ export default function MetadataDialog({ project, statuses, open, onOpenChange, 
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[480px] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-white p-5 shadow-xl focus:outline-none">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[720px] max-w-[94vw] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-white p-5 shadow-xl focus:outline-none">
           <div className="mb-4 flex items-start justify-between">
             <div>
               <Dialog.Title className="text-base font-semibold">{project.name}</Dialog.Title>
@@ -67,7 +67,7 @@ export default function MetadataDialog({ project, statuses, open, onOpenChange, 
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                rows={5}
+                rows={10}
                 placeholder="Anything you want to remember about this track…"
                 className="w-full resize-y rounded-md border border-border bg-white px-2 py-1.5 text-sm"
               />

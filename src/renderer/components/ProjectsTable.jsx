@@ -4,6 +4,7 @@ import RowSelect from './RowSelect.jsx'
 import AbletonIcon from './AbletonIcon.jsx'
 import StarRating from './StarRating.jsx'
 import StatusSelect from './StatusSelect.jsx'
+import BoldDigits from './BoldDigits.jsx'
 import { formatDate, cn } from '../lib/utils.js'
 import { abletonColor } from '../lib/statusColors.js'
 
@@ -37,15 +38,18 @@ function SquareButton({ onClick, disabled, title, children }) {
   )
 }
 
+// Column track sizes. Name flexes up to a max; Open/Play (1fr) split any extra
+// width equally once Name is capped; the rest are fixed.
 const COLUMNS = [
-  { key: 'name', label: 'Name', sortable: true }, // takes remaining width
-  { key: 'status', label: 'Status', sortable: true, className: 'w-40' },
-  { key: 'rating', label: 'Rating', sortable: true, className: 'w-28' },
-  { key: 'notes', label: 'Notes', sortable: true, className: 'w-16' },
-  { key: 'modified', label: 'Modified', sortable: true, className: 'w-44' },
-  { key: 'open', label: 'Open', sortable: false, className: 'w-[17rem]' },
-  { key: 'play', label: 'Play', sortable: false, className: 'w-[17rem]' }
+  { key: 'name', label: 'Name', sortable: true, track: 'minmax(12rem, 28rem)' },
+  { key: 'status', label: 'Status', sortable: true, track: '10rem' },
+  { key: 'rating', label: 'Rating', sortable: true, track: '7rem' },
+  { key: 'notes', label: 'Notes', sortable: true, track: '4.5rem' },
+  { key: 'modified', label: 'Modified', sortable: true, track: '11rem' },
+  { key: 'open', label: 'Open', sortable: false, track: 'minmax(15rem, 1fr)' },
+  { key: 'play', label: 'Play', sortable: false, track: 'minmax(15rem, 1fr)' }
 ]
+const GRID = COLUMNS.map((c) => c.track).join(' ')
 
 const hasNotes = (p) => !!(p.meta.notes && p.meta.notes.trim())
 
@@ -97,168 +101,163 @@ export default function ProjectsTable({
   const isEmpty = folders.length === 0 && projects.length === 0
 
   return (
-    <table className="w-full min-w-[80rem] table-fixed border-collapse text-sm">
-      <thead className="sticky top-0 z-10 bg-white">
-        <tr className="select-none border-b border-border text-left text-xs text-muted-foreground">
-          {COLUMNS.map((col) => (
-            <th
-              key={col.key}
-              onClick={col.sortable ? () => toggleSort(col.key) : undefined}
-              className={cn(
-                'px-3 py-2 font-medium',
-                col.className,
-                col.sortable && 'cursor-pointer hover:text-foreground'
-              )}
-            >
-              <span className="inline-flex items-center gap-1">
-                {col.label}
-                {sort.key === col.key &&
-                  (sort.dir === 'asc' ? (
-                    <ChevronUp className="h-3 w-3" />
-                  ) : (
-                    <ChevronDown className="h-3 w-3" />
-                  ))}
-              </span>
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {/* Folders first — always alphabetical, navigable */}
-        {folders.map((f) => (
-          <tr
-            key={'dir:' + f.relPath}
-            onClick={() => onNavigate(f.relPath)}
-            className="cursor-pointer border-b border-border/60 bg-amber-50/40 hover:bg-amber-50"
+    <div className="min-w-[74.5rem] text-sm">
+      {/* Header */}
+      <div
+        className="sticky top-0 z-10 grid select-none items-center border-b border-border bg-white text-xs text-muted-foreground"
+        style={{ gridTemplateColumns: GRID }}
+      >
+        {COLUMNS.map((col) => (
+          <div
+            key={col.key}
+            onClick={col.sortable ? () => toggleSort(col.key) : undefined}
+            className={cn(
+              'px-3 py-2 font-medium',
+              col.sortable && 'cursor-pointer hover:text-foreground'
+            )}
           >
-            <td className="px-3 py-2">
-              <span className="flex min-w-0 items-center gap-2 font-medium">
-                <Folder className="h-4 w-4 shrink-0 text-amber-500" />
-                <span className="truncate">{f.name}</span>
-                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              </span>
-            </td>
-            <td className="px-3 py-2" />
-            <td className="px-3 py-2" />
-            <td className="px-3 py-2" />
-            <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
-              {formatDate(f.mtimeMs)}
-            </td>
-            <td className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground">
-              folder: {f.childCount} item{f.childCount === 1 ? '' : 's'}
-            </td>
-            <td className="px-3 py-2" />
-          </tr>
+            <span className="inline-flex items-center gap-1">
+              {col.label}
+              {sort.key === col.key &&
+                (sort.dir === 'asc' ? (
+                  <ChevronUp className="h-3 w-3" />
+                ) : (
+                  <ChevronDown className="h-3 w-3" />
+                ))}
+            </span>
+          </div>
         ))}
+      </div>
 
-        {/* Projects */}
-        {sorted.map((p) => {
-          return (
-            <tr key={p.relPath} className="border-b border-border/60 hover:bg-muted/40">
-              <td className="px-3 py-2">
-                <button
-                  onClick={() => onEdit(p)}
-                  className="block max-w-full truncate text-left font-medium hover:underline"
-                  title={p.name}
-                >
-                  {p.name}
-                </button>
-              </td>
-              <td className="px-3 py-2">
-                <StatusSelect
-                  value={p.meta.status}
-                  statuses={statuses}
-                  onChange={(s) => onSetStatus(p, s)}
+      {/* Folders first — always alphabetical, navigable */}
+      {folders.map((f) => (
+        <div
+          key={'dir:' + f.relPath}
+          onClick={() => onNavigate(f.relPath)}
+          className="grid cursor-pointer items-center border-b border-border/60 bg-amber-50/40 hover:bg-amber-50"
+          style={{ gridTemplateColumns: GRID }}
+        >
+          <div className="flex min-w-0 items-center gap-2 px-3 py-2 font-medium">
+            <Folder className="h-4 w-4 shrink-0 text-amber-500" />
+            <span className="min-w-0 truncate" title={f.name}>
+              <BoldDigits text={f.name} />
+            </span>
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          </div>
+          <div />
+          <div />
+          <div />
+          <div className="truncate px-3 py-2 text-muted-foreground">{formatDate(f.mtimeMs)}</div>
+          <div className="truncate px-3 py-2 text-xs text-muted-foreground">
+            folder: {f.childCount} item{f.childCount === 1 ? '' : 's'}
+          </div>
+          <div />
+        </div>
+      ))}
+
+      {/* Projects */}
+      {sorted.map((p) => {
+        const curVer = selVer[p.relPath] ?? p.latestVersion?.path
+        const isLatest = curVer === p.latestVersion?.path
+        const curExp = selExp[p.relPath] ?? p.exports.default?.path
+        const hasExp = p.exports.all.length > 0
+        return (
+          <div
+            key={p.relPath}
+            className="grid items-center border-b border-border/60 hover:bg-muted/40"
+            style={{ gridTemplateColumns: GRID }}
+          >
+            <div className="min-w-0 px-3 py-2">
+              <button
+                onClick={() => onEdit(p)}
+                className="block max-w-full truncate text-left font-medium hover:underline"
+                title={p.name}
+              >
+                <BoldDigits text={p.name} />
+              </button>
+            </div>
+            <div className="min-w-0 px-3 py-2">
+              <StatusSelect
+                value={p.meta.status}
+                statuses={statuses}
+                onChange={(s) => onSetStatus(p, s)}
+              />
+            </div>
+            <div className="px-3 py-2">
+              <StarRating value={p.meta.rating} onChange={(v) => onRate(p, v)} size={14} />
+            </div>
+            <div className="px-3 py-2">
+              <button
+                onClick={() => onEdit(p)}
+                title={hasNotes(p) ? p.meta.notes : 'No notes — click to add'}
+                className="flex items-center"
+              >
+                <StickyNote
+                  className={cn(
+                    'h-4 w-4',
+                    hasNotes(p) ? 'text-sky-500' : 'text-gray-300 hover:text-gray-400'
+                  )}
                 />
-              </td>
-              <td className="px-3 py-2">
-                <StarRating value={p.meta.rating} onChange={(v) => onRate(p, v)} size={14} />
-              </td>
-              <td className="px-3 py-2">
-                <button
-                  onClick={() => onEdit(p)}
-                  title={hasNotes(p) ? p.meta.notes : 'No notes — click to add'}
-                  className="flex items-center"
-                >
-                  <StickyNote
-                    className={cn(
-                      'h-4 w-4',
-                      hasNotes(p) ? 'text-sky-500' : 'text-gray-300 hover:text-gray-400'
-                    )}
+              </button>
+            </div>
+            <div className="truncate px-3 py-2 text-muted-foreground">{formatDate(p.modifiedMs)}</div>
+            <div className="min-w-0 px-3 py-2">
+              <div className="flex w-full items-stretch gap-1.5">
+                <div className="min-w-0 flex-1">
+                  <RowSelect
+                    items={p.versions.map((v) => ({
+                      key: v.path,
+                      label: v.name,
+                      sublabel: formatDate(v.mtimeMs)
+                    }))}
+                    value={curVer}
+                    onChange={(k) => setSelVer((s) => ({ ...s, [p.relPath]: k }))}
+                    badge={isLatest ? <VersionPill ableton={p.ableton} /> : null}
                   />
-                </button>
-              </td>
-              <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
-                {formatDate(p.modifiedMs)}
-              </td>
-              <td className="px-3 py-2">
-                {(() => {
-                  const cur = selVer[p.relPath] ?? p.latestVersion?.path
-                  const isLatest = cur === p.latestVersion?.path
-                  return (
-                    <div className="flex w-full items-stretch gap-1.5">
-                      <div className="min-w-0 flex-1">
-                        <RowSelect
-                          items={p.versions.map((v) => ({
-                            key: v.path,
-                            label: v.name,
-                            sublabel: formatDate(v.mtimeMs)
-                          }))}
-                          value={cur}
-                          onChange={(k) => setSelVer((s) => ({ ...s, [p.relPath]: k }))}
-                          badge={isLatest ? <VersionPill ableton={p.ableton} /> : null}
-                        />
-                      </div>
-                      <SquareButton
-                        title="Open in Ableton"
-                        disabled={!cur}
-                        onClick={() => cur && onOpenProject(cur)}
-                      >
-                        <AbletonIcon className="w-[17px]" />
-                      </SquareButton>
-                    </div>
-                  )
-                })()}
-              </td>
-              <td className="px-3 py-2">
-                {(() => {
-                  const cur = selExp[p.relPath] ?? p.exports.default?.path
-                  const hasExp = p.exports.all.length > 0
-                  return (
-                    <div className="flex w-full items-stretch gap-1.5">
-                      <div className="min-w-0 flex-1">
-                        <RowSelect
-                          items={p.exports.all.map((e) => ({
-                            key: e.path,
-                            label: e.name,
-                            sublabel: `${e.ext.toUpperCase()} · ${formatDate(e.mtimeMs)}`
-                          }))}
-                          value={cur}
-                          onChange={(k) => setSelExp((s) => ({ ...s, [p.relPath]: k }))}
-                          placeholder="No export"
-                          disabled={!hasExp}
-                        />
-                      </div>
-                      <SquareButton title="Play export" disabled={!cur} onClick={() => cur && onOpenExport(cur)}>
-                        <Play className="h-4 w-4 fill-current" />
-                      </SquareButton>
-                    </div>
-                  )
-                })()}
-              </td>
-            </tr>
-          )
-        })}
+                </div>
+                <SquareButton
+                  title="Open in Ableton"
+                  disabled={!curVer}
+                  onClick={() => curVer && onOpenProject(curVer)}
+                >
+                  <AbletonIcon className="w-[17px]" />
+                </SquareButton>
+              </div>
+            </div>
+            <div className="min-w-0 px-3 py-2">
+              <div className="flex w-full items-stretch gap-1.5">
+                <div className="min-w-0 flex-1">
+                  <RowSelect
+                    items={p.exports.all.map((e) => ({
+                      key: e.path,
+                      label: e.name,
+                      sublabel: `${e.ext.toUpperCase()} · ${formatDate(e.mtimeMs)}`
+                    }))}
+                    value={curExp}
+                    onChange={(k) => setSelExp((s) => ({ ...s, [p.relPath]: k }))}
+                    placeholder="No export"
+                    disabled={!hasExp}
+                  />
+                </div>
+                <SquareButton
+                  title="Play export"
+                  disabled={!curExp}
+                  onClick={() => curExp && onOpenExport(curExp)}
+                >
+                  <Play className="h-4 w-4 fill-current" />
+                </SquareButton>
+              </div>
+            </div>
+          </div>
+        )
+      })}
 
-        {isEmpty && (
-          <tr>
-            <td colSpan={COLUMNS.length} className="px-3 py-10 text-center text-muted-foreground">
-              <Music className="mx-auto mb-2 h-6 w-6 opacity-40" />
-              Nothing here.
-            </td>
-          </tr>
-        )}
-      </tbody>
-    </table>
+      {isEmpty && (
+        <div className="px-3 py-10 text-center text-muted-foreground">
+          <Music className="mx-auto mb-2 h-6 w-6 opacity-40" />
+          Nothing here.
+        </div>
+      )}
+    </div>
   )
 }

@@ -6,7 +6,6 @@ import { BrowserWindow } from 'electron'
  */
 export function mlog(level, message) {
   const entry = { ts: Date.now(), level, source: 'main', message: String(message) }
-  // eslint-disable-next-line no-console
   ;(level === 'error' ? console.error : console.log)(`[main] ${entry.message}`)
   for (const win of BrowserWindow.getAllWindows()) {
     if (!win.isDestroyed()) win.webContents.send('debug:log', entry)

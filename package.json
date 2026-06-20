@@ -16,7 +16,8 @@
     "setup": "npm install --ignore-scripts && node node_modules/electron/install.js && npm run rebuild",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "vitest run && electron-vite build",
+    "lint": "eslint .",
+    "check": "eslint . && vitest run && electron-vite build",
     "pack:mac": "electron-vite build && electron-builder --mac --dir",
     "dist": "electron-vite build && electron-builder --mac",
     "install:mac": "bash scripts/install-mac.sh"
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@electron/rebuild": "^3.7.1",
+    "@eslint/js": "^9.39.4",
     "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-dropdown-menu": "^2.1.6",
     "@testing-library/jest-dom": "^6.6.3",
@@ -36,6 +38,10 @@
     "electron": "^34.0.0",
     "electron-builder": "^25.1.8",
     "electron-vite": "^3.0.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.6.0",
     "jsdom": "^26.0.0",
     "lucide-react": "^0.474.0",
     "postcss": "^8.5.1",
