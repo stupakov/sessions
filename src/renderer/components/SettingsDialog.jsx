@@ -53,7 +53,17 @@ export default function SettingsDialog({
   }
 
   const updateRow = (id, val) => setRows((rs) => rs.map((r) => (r.id === id ? { ...r, name: val } : r)))
-  const removeRow = (id) => setRows((rs) => rs.filter((r) => r.id !== id))
+  function removeRow(id) {
+    const row = rows.find((r) => r.id === id)
+    const name = (row?.name || '').trim()
+    const used = name ? statusUsage[name] || 0 : 0
+    const msg =
+      used > 0
+        ? `Delete the status "${name}"?\n\nIt will be cleared from ${used} song${used === 1 ? '' : 's'} when you save.`
+        : `Delete the status "${name || 'New status'}"?`
+    if (!window.confirm(msg)) return
+    setRows((rs) => rs.filter((r) => r.id !== id))
+  }
   const addRow = () => setRows((rs) => [...rs, { id: ++idRef.current, name: 'New status', original: null }])
 
   function onDragStart(i) {
@@ -90,18 +100,8 @@ export default function SettingsDialog({
     for (const r of cleaned) if (r.original && r.original !== r.name) renames[r.original] = r.name
 
     const keptOriginals = new Set(cleaned.map((r) => r.original).filter(Boolean))
+    // Deletions are already confirmed at the trash click (removeRow); just apply.
     const deletions = (settings?.statuses || []).filter((o) => !keptOriginals.has(o))
-
-    const inUse = deletions.filter((d) => (statusUsage[d] || 0) > 0)
-    if (inUse.length) {
-      const lines = inUse
-        .map((d) => `  • ${d} — ${statusUsage[d]} song${statusUsage[d] === 1 ? '' : 's'}`)
-        .join('\n')
-      const ok = window.confirm(
-        `These statuses will be removed and cleared from the songs that use them:\n\n${lines}\n\nContinue?`
-      )
-      if (!ok) return
-    }
 
     // wavApp/mp3App are persisted immediately on pick, so they are intentionally
     // NOT part of this Save — that prevents a status save from clobbering them.
