@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { Play, Pause, SkipBack, Rewind, FastForward, X } from 'lucide-react'
 import BoldDigits from './BoldDigits.jsx'
 
+// Seek interval (seconds) shared by the skip buttons and the ←/→ keyboard shortcuts.
+const SKIP_SECONDS = 10
+
 function fmtTime(s) {
   if (!Number.isFinite(s)) return '0:00'
   const m = Math.floor(s / 60)
@@ -32,6 +35,31 @@ export default function PlayerBar({ track, onClose }) {
       .catch(() => setPlaying(false))
   }, [src])
 
+  // While the player is open: Space toggles play/pause, ←/→ seek by 10s. Ignored
+  // while typing in a text field so notes/inputs keep working.
+  useEffect(() => {
+    if (!track) return
+    const onKey = (e) => {
+      const el = document.activeElement
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return
+      const a = audioRef.current
+      if (!a) return
+      if (e.code === 'Space') {
+        e.preventDefault()
+        if (a.paused) a.play()
+        else a.pause()
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        a.currentTime = Math.min(a.duration || Infinity, a.currentTime + SKIP_SECONDS)
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        a.currentTime = Math.max(0, a.currentTime - SKIP_SECONDS)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [track])
+
   if (!track) return null
 
   const fileName = track.split('/').pop()
@@ -45,10 +73,10 @@ export default function PlayerBar({ track, onClose }) {
   }
   const restart = () => {
     const a = audioRef.current
-    if (a) {
-      a.currentTime = 0
-      a.play()
-    }
+    if (!a) return
+    const wasPlaying = !a.paused
+    a.currentTime = 0
+    if (wasPlaying) a.play() // only resume if it was already playing
   }
   const toggle = () => {
     const a = audioRef.current
@@ -104,7 +132,11 @@ export default function PlayerBar({ track, onClose }) {
         <button title="Restart" onClick={restart} className="rounded-md p-1.5 text-black hover:bg-muted">
           <SkipBack className="h-4 w-4" />
         </button>
-        <button title="Back 15s" onClick={() => seekBy(-15)} className="rounded-md p-1.5 text-black hover:bg-muted">
+        <button
+          title={`Back ${SKIP_SECONDS}s`}
+          onClick={() => seekBy(-SKIP_SECONDS)}
+          className="rounded-md p-1.5 text-black hover:bg-muted"
+        >
           <Rewind className="h-4 w-4" />
         </button>
         <button
@@ -114,7 +146,11 @@ export default function PlayerBar({ track, onClose }) {
         >
           {playing ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current" />}
         </button>
-        <button title="Forward 15s" onClick={() => seekBy(15)} className="rounded-md p-1.5 text-black hover:bg-muted">
+        <button
+          title={`Forward ${SKIP_SECONDS}s`}
+          onClick={() => seekBy(SKIP_SECONDS)}
+          className="rounded-md p-1.5 text-black hover:bg-muted"
+        >
           <FastForward className="h-4 w-4" />
         </button>
       </div>
