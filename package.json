@@ -16,7 +16,9 @@
     "setup": "npm install --ignore-scripts && node node_modules/electron/install.js && npm run rebuild",
     "test": "vitest run",
     "test:watch": "vitest",
-    "dist": "electron-vite build && electron-builder --mac"
+    "pack:mac": "electron-vite build && electron-builder --mac --dir",
+    "dist": "electron-vite build && electron-builder --mac",
+    "install:mac": "bash scripts/install-mac.sh"
   },
   "dependencies": {
     "better-sqlite3": "^11.8.1"

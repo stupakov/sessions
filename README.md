@@ -34,44 +34,57 @@ See [`docs/`](./docs) for the design and the Ableton-folder research.
     against Electron's bundled Node instead, sidestepping the issue. (Switching to an
     LTS via `nvm` is the simpler fix.)
 
-## Install & run (build from source)
+## Install on a Mac (from a copy of this repo)
 
-This is the path to use on each machine.
-
-```bash
-git clone <this-repo> ableton-song-manager
-cd ableton-song-manager
-
-npm install          # installs deps and rebuilds SQLite for Electron
-npm run dev          # launch in development (hot reload)
-```
-
-If `npm install` fails while building the native SQLite module (typically only on
-bleeding-edge Node), run the resilient path instead:
+Do this on each machine — it builds the app for that machine's architecture
+(works on both Apple Silicon and Intel).
 
 ```bash
-npm run setup        # installs without auto-build, fetches Electron, then
-                     # rebuilds better-sqlite3 against Electron's ABI
-npm run dev
+cd ableton-song-manager      # the copied/cloned repo
+
+npm install                  # installs deps; rebuilds SQLite for Electron
+npm run install:mac          # builds Sessions.app and installs it to /Applications
 ```
 
-### Production build / packaged app
+Then launch **Sessions** from /Applications or Spotlight. On the very first launch
+macOS may warn it's from an unidentified developer (the app is built locally and
+unsigned) — right-click the app → **Open** once to allow it.
+
+Notes for a fresh machine:
+- Requires **Node.js 20 LTS or 22 LTS** (see Requirements above). Don't copy
+  `node_modules` between machines — run `npm install` fresh so the native SQLite
+  module is built for that machine. If you copied it by accident:
+  `rm -rf node_modules && npm install`.
+- If `npm install` fails building the native SQLite module (only on very new Node),
+  use `npm run setup` instead, then re-run `npm run install:mac`.
+- Your data (DB + settings) lives in `~/Library/Application Support/ableton-song-manager`
+  on each machine; it is **per-machine** and not synced.
+
+### Updating the installed app after code changes
 
 ```bash
-npm run build        # bundle main + preload + renderer into ./out
-npm start            # run the bundled app
-
-npm run dist         # produce a distributable .dmg in ./release
+git pull            # (or copy the updated repo)
+npm run install:mac # rebuild + reinstall to /Applications
 ```
 
-`npm run dist` creates a `.dmg` you can copy to other Macs and install by
-drag-and-drop — no per-machine build needed. (Unsigned, so on first launch use
-right-click → Open to bypass Gatekeeper.)
+### Development
 
-### Tests
+```bash
+npm run dev          # hot-reload dev build
+```
+
+In dev the menu bar / dock say **"Electron"** and the About box shows the Electron
+icon — that's unavoidable because the running process is Electron's own bundle. Only
+the packaged app (installed via `npm run install:mac`) shows the **Sessions** name
+and icon. Use the installed app for real use; `npm run dev` for iterating.
+
+### Other commands
 
 ```bash
 npm test             # run the scanner unit tests (Vitest)
+npm run build        # bundle main+preload+renderer into ./out (no packaging)
+npm run pack:mac     # build Sessions.app into ./dist (no install, no .dmg)
+npm run dist         # build a distributable .dmg in ./dist
 ```
 
 ## How it identifies projects, versions, and exports
