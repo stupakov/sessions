@@ -9,6 +9,9 @@ as the project evolves — research, design decisions, gotchas, conventions.
   organizes projects on disk (file types, folder layout, versions, exports) and the
   exact rules this app uses for project detection, version selection, and export
   matching.
+- [ableton-folder-survey.md](./ableton-folder-survey.md) — read-only survey of the
+  real library that verified those rules against ~198 actual projects, plus the code
+  changes it prompted and the accepted edge cases.
 - [architecture.md](./architecture.md) — chosen stack, data model, core logic, IPC
   surface, UI, layout, milestones, and open questions.
 
