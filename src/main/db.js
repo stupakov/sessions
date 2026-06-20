@@ -7,7 +7,7 @@ export const DEFAULT_STATUSES = [
   'Loops',
   'Arrangement',
   'Mixing',
-  'Mastering',
+  'Mastery',
   'Completed',
   'Released'
 ]

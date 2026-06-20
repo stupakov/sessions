@@ -17,7 +17,8 @@ export default defineConfig({
         formats: ['cjs']
       },
       rollupOptions: {
-        output: { entryFileNames: '[name].js' }
+        // .cjs so it is loaded as CommonJS despite the package's "type": "module".
+        output: { entryFileNames: '[name].cjs' }
       }
     }
   },

@@ -112,6 +112,27 @@ song-list/
 8. Settings dialog (root, per-type apps, status list).
 9. Polish + packaged `.app`.
 
+## Debug Console
+
+An in-app log panel (toolbar **Debug** button or **⌘`**) shows a unified stream of
+renderer and main-process logs. Implementation: `src/renderer/lib/logger.js` is a
+small log bus; `src/main/logger.js` (`mlog`) prints to stdout and broadcasts each
+entry over the `debug:log` IPC channel, which the preload forwards via
+`onDebugLog`. The renderer also captures `window.onerror` /
+`unhandledrejection`, so silent failures surface here. IPC handlers are wrapped
+(`ipc.js#handle`) to log and re-throw errors.
+
+## Gotchas (learned the hard way)
+
+- **Preload must be CommonJS `.cjs`.** The package is `"type": "module"`, so a
+  `.js` preload is parsed as ESM and its `require(...)` throws at load — the preload
+  silently fails and `window.api` is `undefined`, making every IPC-backed control
+  do nothing. Fix: emit preload as `index.cjs` (electron-vite `entryFileNames`) and
+  point `webPreferences.preload` at it.
+- **Native `better-sqlite3` won't compile against bleeding-edge system Node** (e.g.
+  Node 25). Install with `npm run setup` so it's built against Electron's Node ABI
+  instead. See README.
+
 ## Open questions / future ideas
 
 - Live file-watching instead of manual refresh.

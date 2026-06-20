@@ -12,7 +12,14 @@ const api = {
 
   openProject: (absPath) => ipcRenderer.invoke('open:project', absPath),
   openExport: (absPath) => ipcRenderer.invoke('open:export', absPath),
-  reveal: (absPath) => ipcRenderer.invoke('reveal', absPath)
+  reveal: (absPath) => ipcRenderer.invoke('reveal', absPath),
+
+  // Debug console: subscribe to log entries emitted by the main process.
+  onDebugLog: (cb) => {
+    const handler = (_e, entry) => cb(entry)
+    ipcRenderer.on('debug:log', handler)
+    return () => ipcRenderer.removeListener('debug:log', handler)
+  }
 }
 
 contextBridge.exposeInMainWorld('api', api)
