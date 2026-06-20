@@ -13,6 +13,3 @@ export function mlog(level, message) {
   }
   return entry
 }
-
-export const logInfo = (msg) => mlog('info', msg)
-export const logError = (msg) => mlog('error', msg)

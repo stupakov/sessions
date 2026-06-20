@@ -73,7 +73,12 @@ export default function SettingsDialog({
 
   function save() {
     const cleaned = rows.map((r) => ({ ...r, name: r.name.trim() })).filter((r) => r.name)
-    const newNames = [...new Set(cleaned.map((r) => r.name))]
+    const names = cleaned.map((r) => r.name)
+    const newNames = [...new Set(names)]
+    if (newNames.length !== names.length) {
+      window.alert('Each status must have a unique name. Please rename or remove duplicates.')
+      return
+    }
 
     const renames = {}
     for (const r of cleaned) if (r.original && r.original !== r.name) renames[r.original] = r.name
@@ -224,7 +229,7 @@ export default function SettingsDialog({
 
           <div className="mt-6 flex items-center gap-2">
             <span className="text-[11px] text-muted-foreground">
-              Ableton Song Manager v{settings?.appVersion || '—'}
+              Sessions v{settings?.appVersion || '—'}
             </span>
             <div className="ml-auto flex gap-2">
               <Dialog.Close className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted">

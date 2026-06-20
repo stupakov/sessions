@@ -25,6 +25,17 @@ function handle(channel, fn) {
   })
 }
 
+// Open a file with the system default app; always resolves (never hangs).
+function openDefault(absPath, resolve) {
+  shell
+    .openPath(absPath)
+    .then((res) => {
+      if (res) mlog('error', `openPath("${absPath}"): ${res}`)
+    })
+    .catch((e) => mlog('error', `openPath threw for "${absPath}": ${e.message}`))
+    .finally(() => resolve())
+}
+
 // Open a file with a specific macOS application bundle, or the system default.
 function openWithApp(absPath, appPath) {
   return new Promise((resolve) => {
@@ -32,14 +43,11 @@ function openWithApp(absPath, appPath) {
       execFile('open', ['-a', appPath, absPath], (err) => {
         if (err) {
           mlog('error', `open -a "${appPath}" failed: ${err.message}; using default`)
-          shell.openPath(absPath).then(() => resolve())
+          openDefault(absPath, resolve)
         } else resolve()
       })
     } else {
-      shell.openPath(absPath).then((res) => {
-        if (res) mlog('error', `openPath("${absPath}"): ${res}`)
-        resolve()
-      })
+      openDefault(absPath, resolve)
     }
   })
 }

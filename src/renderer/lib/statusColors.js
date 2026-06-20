@@ -22,7 +22,9 @@ const UNKNOWN = { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400' }
 export function statusColor(statuses, name) {
   if (!name) return UNKNOWN
   const i = statuses.indexOf(name)
-  return i === -1 ? UNKNOWN : PALETTE[i % PALETTE.length]
+  // Past the palette length, fall back to gray rather than silently reusing an
+  // in-use color (so a collision is visually obvious).
+  return i === -1 || i >= PALETTE.length ? UNKNOWN : PALETTE[i]
 }
 
 // Star rating color graded by value: low = red, high = green.

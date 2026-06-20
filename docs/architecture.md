@@ -48,10 +48,12 @@ This directory lives **outside** the `.app` bundle, so it **survives app upgrade
 and re-installs** (replacing/reinstalling the `.app` never touches it). Data is only
 lost if the user deletes that folder or the app's *name* changes.
 
-To keep the location stable, `main/index.js` calls `app.setName('ableton-song-manager')`
-before any path lookup. This is important because a packaged build's `productName`
-("Ableton Song Manager") would otherwise change `getName()` — and thus the userData
-folder — versus dev. Pinning the name makes dev and packaged share one DB forever.
+To keep the location stable, `main/index.js` sets the display name with
+`app.setName('Sessions')` but then **explicitly pins** the data dir with
+`app.setPath('userData', join(app.getPath('appData'), 'ableton-song-manager'))`.
+The explicit `setPath` overrides any name-derived default, so the display name can
+change (and packaged `productName` can differ from dev) without ever moving the
+DB/config. Dev and packaged share one stable DB forever.
 
 A **single-instance lock** (`app.requestSingleInstanceLock()`) prevents two app
 instances from opening the same DB and clobbering each other's settings.
