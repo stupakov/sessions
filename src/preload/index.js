@@ -16,6 +16,9 @@ const api = {
   openExport: (absPath) => ipcRenderer.invoke('open:export', absPath),
   reveal: (absPath) => ipcRenderer.invoke('reveal', absPath),
 
+  // Build a privileged URL the in-app player can stream a local file from.
+  mediaUrl: (absPath) => `media://local/${encodeURIComponent(absPath)}`,
+
   // Debug console: subscribe to log entries emitted by the main process.
   onDebugLog: (cb) => {
     const handler = (_e, entry) => cb(entry)

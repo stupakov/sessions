@@ -18,6 +18,7 @@ export default function SettingsDialog({
   onSetApp,
   onSave
 }) {
+  const [playMode, setPlayMode] = useState('internal')
   const [wavApp, setWavApp] = useState(null)
   const [mp3App, setMp3App] = useState(null)
   const [rows, setRows] = useState([]) // { id, name, original }
@@ -27,6 +28,7 @@ export default function SettingsDialog({
 
   useEffect(() => {
     if (settings && open) {
+      setPlayMode(settings.playMode || 'internal')
       setWavApp(settings.wavApp)
       setMp3App(settings.mp3App)
       setRows((settings.statuses || []).map((name) => ({ id: ++idRef.current, name, original: name })))
@@ -44,6 +46,10 @@ export default function SettingsDialog({
   function resetApp(key, setter) {
     setter(null)
     onSetApp?.({ [key]: null })
+  }
+  function changePlayMode(mode) {
+    setPlayMode(mode)
+    onSetApp?.({ playMode: mode })
   }
 
   const updateRow = (id, val) => setRows((rs) => rs.map((r) => (r.id === id ? { ...r, name: val } : r)))
@@ -140,7 +146,36 @@ export default function SettingsDialog({
 
             <section>
               <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Open exports with
+                Playback
+              </h3>
+              <div className="flex gap-2">
+                {[
+                  ['internal', 'Internal player'],
+                  ['external', 'External app']
+                ].map(([mode, label]) => (
+                  <button
+                    key={mode}
+                    onClick={() => changePlayMode(mode)}
+                    className={cn(
+                      'rounded-md border px-3 py-1.5 text-xs',
+                      playMode === mode
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-border hover:bg-muted'
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Internal shows an in-app player when you hit Play. External opens the export in the
+                app chosen below.
+              </p>
+            </section>
+
+            <section>
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Open exports with <span className="normal-case">(external mode)</span>
               </h3>
               <div className="space-y-2">
                 {[

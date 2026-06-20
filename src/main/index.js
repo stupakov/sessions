@@ -1,6 +1,6 @@
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { app, shell, BrowserWindow } from 'electron'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { app, shell, BrowserWindow, protocol, net } from 'electron'
 import { initDb, setSettings } from './db.js'
 import { registerIpc } from './ipc.js'
 import { buildAppMenu } from './menu.js'
@@ -17,6 +17,16 @@ app.setAboutPanelOptions({ applicationName: 'Sessions', applicationVersion: app.
 // DB/config and it survives upgrades. userData =>
 // ~/Library/Application Support/ableton-song-manager/
 app.setPath('userData', path.join(app.getPath('appData'), 'ableton-song-manager'))
+
+// Privileged scheme for streaming local audio into the renderer's in-app player —
+// seekable (HTTP Range), no full-file read, no weakening of webSecurity/CSP.
+// Must be registered before app is ready.
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'media',
+    privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true, bypassCSP: false }
+  }
+])
 
 let mainWindow = null
 
@@ -66,6 +76,13 @@ if (!gotLock) {
     initDb()
     setSettings({ appVersion: app.getVersion() }) // record which version last wrote the config
     mlog('info', `app v${app.getVersion()} ready; userData=${app.getPath('userData')}`)
+
+    // Serve local audio files to the in-app player. URL: media://local/<encoded abs path>
+    protocol.handle('media', (request) => {
+      const encoded = request.url.slice('media://local/'.length)
+      const absPath = decodeURIComponent(encoded)
+      return net.fetch(pathToFileURL(absPath).toString())
+    })
     // In dev the dock shows the Electron icon; set ours from the PNG.
     if (process.platform === 'darwin' && !app.isPackaged && app.dock) {
       try {

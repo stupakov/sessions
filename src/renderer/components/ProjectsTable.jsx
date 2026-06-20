@@ -79,7 +79,7 @@ export default function ProjectsTable({
   onRate,
   onSetStatus,
   onOpenProject,
-  onOpenExport
+  onPlay
 }) {
   const [sort, setSort] = useState({ key: 'name', dir: 'asc' })
   // Session-only selection per row (resets to newest on restart / fresh mount).
@@ -242,7 +242,7 @@ export default function ProjectsTable({
                 <SquareButton
                   title="Play export"
                   disabled={!curExp}
-                  onClick={() => curExp && onOpenExport(curExp)}
+                  onClick={() => curExp && onPlay(curExp)}
                 >
                   <Play className="h-4 w-4 fill-current" />
                 </SquareButton>

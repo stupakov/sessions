@@ -14,6 +14,7 @@ export const DEFAULT_STATUSES = [
 
 const SETTING_DEFAULTS = {
   root: null,
+  playMode: 'internal', // 'internal' = in-app player; 'external' = open in another app
   wavApp: null, // absolute path to a .app, or null = system default
   mp3App: null,
   statuses: DEFAULT_STATUSES

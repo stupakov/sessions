@@ -4,6 +4,7 @@ import ProjectsTable from './components/ProjectsTable.jsx'
 import MetadataDialog from './components/MetadataDialog.jsx'
 import SettingsDialog from './components/SettingsDialog.jsx'
 import DebugConsole from './components/DebugConsole.jsx'
+import PlayerBar from './components/PlayerBar.jsx'
 import { log, logError, ingest } from './lib/logger.js'
 
 function basename(p) {
@@ -21,6 +22,7 @@ export default function App() {
   const [editing, setEditing] = useState(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [debugOpen, setDebugOpen] = useState(false)
+  const [track, setTrack] = useState(null) // in-app player current file (absolute path)
 
   const loadDir = useCallback(async (rel) => {
     setLoading(true)
@@ -137,7 +139,16 @@ export default function App() {
   }, [])
 
   const openProject = useCallback((p) => window.api.openProject(p).catch((e) => logError(e)), [])
-  const openExport = useCallback((p) => window.api.openExport(p).catch((e) => logError(e)), [])
+  const playExport = useCallback(
+    (p) => {
+      if (settings?.playMode === 'external') {
+        window.api.openExport(p).catch((e) => logError(e))
+      } else {
+        setTrack(p) // load into the in-app player
+      }
+    },
+    [settings]
+  )
 
   const hasRoot = settings?.root
 
@@ -236,10 +247,12 @@ export default function App() {
             onRate={(p, v) => saveMeta(p.relPath, { rating: v })}
             onSetStatus={(p, s) => saveMeta(p.relPath, { status: s })}
             onOpenProject={openProject}
-            onOpenExport={openExport}
+            onPlay={playExport}
           />
         )}
       </main>
+
+      <PlayerBar track={track} onClose={() => setTrack(null)} />
 
       <DebugConsole open={debugOpen} onClose={() => setDebugOpen(false)} />
 
