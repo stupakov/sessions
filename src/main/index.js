@@ -5,12 +5,14 @@ import { initDb, setSettings } from './db.js'
 import { registerIpc } from './ipc.js'
 import { mlog } from './logger.js'
 
-// Pin the app identity so the userData location (and thus the DB + config) is the
-// SAME in dev and packaged builds, and stable across version upgrades.
-// userData => ~/Library/Application Support/ableton-song-manager/
-app.setName('ableton-song-manager')
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+// Display name (dock / menu / About in packaged builds).
+app.setName('Sessions')
+// Pin the data dir to a stable internal id so renaming the app never moves the
+// DB/config and it survives upgrades. userData =>
+// ~/Library/Application Support/ableton-song-manager/
+app.setPath('userData', path.join(app.getPath('appData'), 'ableton-song-manager'))
 
 let mainWindow = null
 
@@ -20,7 +22,7 @@ function createWindow() {
     height: 720,
     minWidth: 720,
     minHeight: 480,
-    title: 'Ableton Song Manager',
+    title: 'Sessions',
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#ffffff',
     webPreferences: {
@@ -60,6 +62,14 @@ if (!gotLock) {
     initDb()
     setSettings({ appVersion: app.getVersion() }) // record which version last wrote the config
     mlog('info', `app v${app.getVersion()} ready; userData=${app.getPath('userData')}`)
+    // In dev the dock shows the Electron icon; set ours from the PNG.
+    if (process.platform === 'darwin' && !app.isPackaged && app.dock) {
+      try {
+        app.dock.setIcon(path.join(__dirname, '../../build/icon.png'))
+      } catch (e) {
+        mlog('error', `dock.setIcon failed: ${e.message}`)
+      }
+    }
     registerIpc()
     createWindow()
 

@@ -38,13 +38,13 @@ function SquareButton({ onClick, disabled, title, children }) {
 }
 
 const COLUMNS = [
-  { key: 'name', label: 'Name', sortable: true },
-  { key: 'status', label: 'Status', sortable: true },
-  { key: 'rating', label: 'Rating', sortable: true },
-  { key: 'notes', label: 'Notes', sortable: true },
-  { key: 'modified', label: 'Modified', sortable: true },
-  { key: 'open', label: 'Open', sortable: false },
-  { key: 'play', label: 'Play', sortable: false }
+  { key: 'name', label: 'Name', sortable: true }, // takes remaining width
+  { key: 'status', label: 'Status', sortable: true, className: 'w-40' },
+  { key: 'rating', label: 'Rating', sortable: true, className: 'w-28' },
+  { key: 'notes', label: 'Notes', sortable: true, className: 'w-16' },
+  { key: 'modified', label: 'Modified', sortable: true, className: 'w-44' },
+  { key: 'open', label: 'Open', sortable: false, className: 'w-[17rem]' },
+  { key: 'play', label: 'Play', sortable: false, className: 'w-[17rem]' }
 ]
 
 const hasNotes = (p) => !!(p.meta.notes && p.meta.notes.trim())
@@ -97,7 +97,7 @@ export default function ProjectsTable({
   const isEmpty = folders.length === 0 && projects.length === 0
 
   return (
-    <table className="w-full border-collapse text-sm">
+    <table className="w-full table-fixed border-collapse text-sm">
       <thead className="sticky top-0 z-10 bg-white">
         <tr className="select-none border-b border-border text-left text-xs text-muted-foreground">
           {COLUMNS.map((col) => (
@@ -106,6 +106,7 @@ export default function ProjectsTable({
               onClick={col.sortable ? () => toggleSort(col.key) : undefined}
               className={cn(
                 'px-3 py-2 font-medium',
+                col.className,
                 col.sortable && 'cursor-pointer hover:text-foreground'
               )}
             >
@@ -131,10 +132,10 @@ export default function ProjectsTable({
             className="cursor-pointer border-b border-border/60 bg-amber-50/40 hover:bg-amber-50"
           >
             <td className="px-3 py-2">
-              <span className="inline-flex items-center gap-2 font-medium">
-                <Folder className="h-4 w-4 text-amber-500" />
-                {f.name}
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="flex min-w-0 items-center gap-2 font-medium">
+                <Folder className="h-4 w-4 shrink-0 text-amber-500" />
+                <span className="truncate">{f.name}</span>
+                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               </span>
             </td>
             <td className="px-3 py-2" />
@@ -157,8 +158,8 @@ export default function ProjectsTable({
               <td className="px-3 py-2">
                 <button
                   onClick={() => onEdit(p)}
-                  className="text-left font-medium hover:underline"
-                  title="Edit notes & status"
+                  className="block max-w-full truncate text-left font-medium hover:underline"
+                  title={p.name}
                 >
                   {p.name}
                 </button>
@@ -195,7 +196,7 @@ export default function ProjectsTable({
                   const cur = selVer[p.relPath] ?? p.latestVersion?.path
                   const isLatest = cur === p.latestVersion?.path
                   return (
-                    <div className="flex w-[15rem] items-stretch gap-1">
+                    <div className="flex w-full items-stretch gap-1.5">
                       <div className="min-w-0 flex-1">
                         <RowSelect
                           items={p.versions.map((v) => ({
@@ -213,7 +214,7 @@ export default function ProjectsTable({
                         disabled={!cur}
                         onClick={() => cur && onOpenProject(cur)}
                       >
-                        <AbletonIcon className="h-4 w-4" />
+                        <AbletonIcon className="w-[17px]" />
                       </SquareButton>
                     </div>
                   )
@@ -224,7 +225,7 @@ export default function ProjectsTable({
                   const cur = selExp[p.relPath] ?? p.exports.default?.path
                   const hasExp = p.exports.all.length > 0
                   return (
-                    <div className="flex w-[15rem] items-stretch gap-1">
+                    <div className="flex w-full items-stretch gap-1.5">
                       <div className="min-w-0 flex-1">
                         <RowSelect
                           items={p.exports.all.map((e) => ({

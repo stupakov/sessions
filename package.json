@@ -43,13 +43,14 @@
     "vitest": "^3.0.4"
   },
   "build": {
-    "appId": "net.stupakov.abletonsongmanager",
-    "productName": "Ableton Song Manager",
+    "appId": "net.stupakov.sessions",
+    "productName": "Sessions",
     "files": [
       "out/**/*"
     ],
     "mac": {
       "category": "public.app-category.music",
+      "icon": "build/icon.icns",
       "target": "dmg"
     }
   }

@@ -156,7 +156,7 @@ export default function App() {
       <header className="titlebar-drag flex select-none items-center gap-3 border-b border-border bg-white px-4 py-2 pl-20">
         <div className="flex items-center gap-2 font-semibold">
           <Music4 className="h-4 w-4 text-primary" />
-          Ableton Song Manager
+          Sessions
         </div>
         <div className="ml-2 flex-1 truncate text-xs text-muted-foreground">
           {settings?.root || 'No folder selected'}
