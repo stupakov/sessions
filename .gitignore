@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+out/
+build/
+release/
+*.app
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env / editor
+.env
+.env.local
+.DS_Store
+.vscode/
+.idea/
+
+# Test / coverage
+coverage/
