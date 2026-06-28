@@ -53,6 +53,9 @@ const GRID = COLUMNS.map((c) => c.track).join(' ')
 
 const hasNotes = (p) => !!(p.meta.notes && p.meta.notes.trim())
 
+// The folder a project lives in, derived from its rel path ('' = library root).
+const parentRel = (relPath) => relPath.split('/').slice(0, -1).join('/')
+
 function compare(a, b, key) {
   switch (key) {
     case 'name':
@@ -74,7 +77,9 @@ export default function ProjectsTable({
   folders,
   projects,
   statuses,
+  flat = false,
   onNavigate,
+  onJumpToFolder,
   onEdit,
   onRate,
   onSetStatus,
@@ -175,6 +180,16 @@ export default function ProjectsTable({
               >
                 <BoldDigits text={p.name} />
               </button>
+              {flat && (
+                <button
+                  onClick={() => onJumpToFolder?.(parentRel(p.relPath))}
+                  title={`Go to ${parentRel(p.relPath) || 'library root'}`}
+                  className="mt-0.5 flex max-w-full items-center gap-1 truncate text-left text-xs text-muted-foreground hover:text-foreground hover:underline"
+                >
+                  <Folder className="h-3 w-3 shrink-0 text-amber-500" />
+                  <span className="truncate">{parentRel(p.relPath) || 'library root'}</span>
+                </button>
+              )}
             </div>
             <div className="min-w-0 px-3 py-2">
               <StatusSelect

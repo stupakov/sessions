@@ -1,7 +1,8 @@
 import { execFile } from 'node:child_process'
 import path from 'node:path'
 import { ipcMain, dialog, shell, BrowserWindow } from 'electron'
-import { listDir } from './scanner/index.js'
+import { listDir, findProjects, readEntries } from './scanner/index.js'
+import { alsFilesOf } from './scanner/signature.js'
 import {
   getSettings,
   setSettings,
@@ -10,6 +11,7 @@ import {
   applyStatusChanges,
   getStatusCounts
 } from './db.js'
+import { reconcileLibrary, locateCandidates, associate, detach } from './identity.js'
 import { mlog } from './logger.js'
 
 // Wrap an ipcMain.handle callback with logging + error capture so failures show
@@ -60,7 +62,7 @@ async function listFolder(relPath = '') {
   }
   const t = Date.now()
   const res = await listDir(settings.root, relPath)
-  const meta = getAllMeta()
+  const meta = getAllMeta(settings.root)
   const projects = res.projects.map((p) => ({
     ...p,
     meta: meta[p.relPath] ?? { status: null, rating: 0, notes: '', updatedAt: 0 }
@@ -72,6 +74,24 @@ async function listFolder(relPath = '') {
   return { relPath: res.relPath, root: settings.root, folders: res.folders, projects }
 }
 
+// Flat list of every project in the library, with metadata, for the "All projects"
+// view (docs: orthogonal display mode). Unlike fs:list this does NOT read each .als's
+// Ableton version — that would gunzip ~hundreds of files (and hydrate online-only
+// Dropbox files) on every load. The version pill is a folder-view nicety only.
+async function listAll() {
+  const settings = getSettings()
+  if (!settings.root) return { root: null, projects: [] }
+  const t = Date.now()
+  const found = await findProjects(settings.root)
+  const meta = getAllMeta(settings.root)
+  const projects = found.map((p) => ({
+    ...p,
+    meta: meta[p.relPath] ?? { status: null, rating: 0, notes: '', updatedAt: 0 }
+  }))
+  mlog('info', `listAll: ${projects.length} projects in ${Date.now() - t}ms`)
+  return { root: settings.root, projects }
+}
+
 export function registerIpc() {
   handle('settings:get', () => getSettings())
   handle('settings:set', (_e, patch) => {
@@ -80,18 +100,36 @@ export function registerIpc() {
   })
 
   handle('fs:list', (_e, relPath) => listFolder(relPath || ''))
+  handle('fs:listAll', () => listAll())
 
-  handle('meta:set', (_e, relPath, patch) => {
+  // The FS read lives here (keeps db.js synchronous + FS-free, docs §6). Resolve the
+  // absolute path, read the folder's current .als signature, then upsert by abs_path.
+  handle('meta:set', async (_e, relPath, patch) => {
     mlog('info', `meta:set ${relPath} ${JSON.stringify(patch)}`)
-    return setProjectMeta(relPath, patch)
+    const settings = getSettings()
+    const absPath = path.join(settings.root, relPath)
+    const folderName = path.basename(relPath)
+    const { files } = await readEntries(absPath)
+    return setProjectMeta(absPath, folderName, alsFilesOf(files), patch)
   })
 
-  handle('meta:statusCounts', () => getStatusCounts())
+  handle('meta:statusCounts', () => getStatusCounts(getSettings().root))
 
   handle('meta:applyStatusChanges', (_e, changes) => {
     mlog('info', `applyStatusChanges ${JSON.stringify(changes)}`)
     applyStatusChanges(changes)
     return true
+  })
+
+  handle('meta:reconcile', () => reconcileLibrary())
+  handle('meta:locateCandidates', (_e, metaId) => locateCandidates(metaId))
+  handle('meta:associate', (_e, metaId, absPath, opts) => {
+    mlog('info', `associate ${metaId} -> ${absPath} ${JSON.stringify(opts || {})}`)
+    return associate(metaId, absPath, opts || {})
+  })
+  handle('meta:detach', (_e, metaId) => {
+    mlog('info', `detach ${metaId}`)
+    return detach(metaId)
   })
 
   handle('dialog:selectRoot', async () => {

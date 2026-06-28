@@ -20,10 +20,10 @@
     "rebuild": "electron-rebuild -f -w better-sqlite3",
     "postinstall": "electron-rebuild -f -w better-sqlite3",
     "setup": "npm install --ignore-scripts && node node_modules/electron/install.js && npm run rebuild",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "node scripts/run-tests.mjs run",
+    "test:watch": "node scripts/run-tests.mjs",
     "lint": "eslint .",
-    "check": "eslint . && vitest run && electron-vite build",
+    "check": "eslint . && npm test && electron-vite build",
     "pack:mac": "electron-vite build && electron-builder --mac --dir",
     "dist": "electron-vite build && electron-builder --mac",
     "install:mac": "bash scripts/install-mac.sh"

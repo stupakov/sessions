@@ -2,8 +2,8 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createReadStream, statSync } from 'node:fs'
 import { Readable } from 'node:stream'
-import { app, shell, BrowserWindow, protocol } from 'electron'
-import { initDb, setSettings } from './db.js'
+import { app, shell, BrowserWindow, protocol, dialog } from 'electron'
+import { initDb, resetDb, setSettings } from './db.js'
 import { registerIpc } from './ipc.js'
 import { buildAppMenu } from './menu.js'
 import { mlog } from './logger.js'
@@ -54,6 +54,15 @@ function createWindow() {
     return { action: 'deny' }
   })
 
+  // macOS 3-finger swipe → folder back/forward (mirrors the browser gesture). The
+  // renderer owns the folder-navigation history; we just forward the direction.
+  // (Requires Trackpad ▸ "Swipe between pages" set to include three fingers.)
+  // Swiping left (content follows the fingers leftward) goes Back, like Finder/browsers.
+  mainWindow.on('swipe', (_e, direction) => {
+    if (direction === 'left') mainWindow.webContents.send('nav:swipe', 'back')
+    else if (direction === 'right') mainWindow.webContents.send('nav:swipe', 'forward')
+  })
+
   if (process.env.ELECTRON_RENDERER_URL) {
     mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
   } else {
@@ -75,7 +84,27 @@ if (!gotLock) {
   })
 
   app.whenReady().then(() => {
-    initDb()
+    // Schema-version gate (docs §3.2). An incompatible (old/newer) project_meta
+    // schema can't be read by this pre-release; offer Reset/Quit before any window.
+    let schema = initDb()
+    if (schema === 'incompatible') {
+      const choice = dialog.showMessageBoxSync({
+        type: 'warning',
+        buttons: ['Reset Database', 'Quit'],
+        defaultId: 0,
+        cancelId: 1,
+        title: 'Incompatible database',
+        message: 'Incompatible database.',
+        detail:
+          "This pre-release version uses a new data format. Your saved data — statuses, ratings, notes, and your selected library folder / app preferences — can't be read and will be cleared."
+      })
+      if (choice === 1) {
+        app.quit()
+        return
+      }
+      schema = resetDb() // unlink + recreate fresh; userData only (RO-safe)
+      mlog('info', 'incompatible DB reset by user')
+    }
     setSettings({ appVersion: app.getVersion() }) // record which version last wrote the config
     mlog('info', `app v${app.getVersion()} ready; userData=${app.getPath('userData')}`)
 

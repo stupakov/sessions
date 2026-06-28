@@ -19,6 +19,7 @@ export default [
     files: [
       'src/main/**/*.js',
       'src/preload/**/*.js',
+      'scripts/**/*.{js,mjs}',
       '*.config.{js,mjs}',
       'electron.vite.config.mjs',
       'vitest.config.js',

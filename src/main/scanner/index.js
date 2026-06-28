@@ -2,6 +2,7 @@ import { readdir, stat } from 'node:fs/promises'
 import { createReadStream } from 'node:fs'
 import { createGunzip } from 'node:zlib'
 import path from 'node:path'
+import { stemOf, alsFilesOf } from './signature.js'
 
 // Subfolders inside a project that must never be treated as projects or scanned
 // for versions/exports. See docs/ableton-project-structure.md.
@@ -18,7 +19,9 @@ export const EXPORT_EXTS = ['.wav', '.mp3']
 // files in real libraries. See docs/ableton-project-structure.md.
 const RELEVANT_EXTS = new Set([ALS_EXT, ...EXPORT_EXTS])
 
-const stem = (name) => name.slice(0, name.length - path.extname(name).length)
+// Stem comes from the shared signature helper so capture-time and match-time
+// stems are computed by one function (see signature.js / docs §7).
+const stem = stemOf
 const lowerExt = (name) => path.extname(name).toLowerCase()
 const isIgnoredDir = (name) => IGNORED_DIRS.has(name) || name.startsWith('.')
 
@@ -27,10 +30,11 @@ const isIgnoredDir = (name) => IGNORED_DIRS.has(name) || name.startsWith('.')
 export const stripProjectSuffix = (name) => name.replace(/ Project$/, '')
 
 /**
- * Read a directory's immediate entries: only .als/.wav/.mp3 files (with mtime),
- * plus the list of subdirectories. Unreadable dirs yield empty lists.
+ * Read a directory's immediate entries: only .als/.wav/.mp3 files (with mtime and
+ * size), plus the list of subdirectories. Unreadable dirs yield empty lists.
+ * READ-ONLY (stat only). `size` powers the project signature (see signature.js).
  */
-async function readEntries(dir) {
+export async function readEntries(dir) {
   let dirents
   try {
     dirents = await readdir(dir, { withFileTypes: true })
@@ -45,12 +49,15 @@ async function readEntries(dir) {
     } else if (d.isFile() && RELEVANT_EXTS.has(lowerExt(d.name))) {
       const full = path.join(dir, d.name)
       let mtimeMs = 0
+      let size = 0
       try {
-        mtimeMs = (await stat(full)).mtimeMs
+        const st = await stat(full)
+        mtimeMs = st.mtimeMs
+        size = st.size
       } catch {
         continue
       }
-      files.push({ name: d.name, path: full, mtimeMs })
+      files.push({ name: d.name, path: full, mtimeMs, size })
     }
   }
   return { files, dirs }
@@ -108,12 +115,14 @@ export function buildProject(dir, root, files) {
   return {
     relPath: path.relative(root, dir) || folderName,
     dir,
+    absPath: dir, // last-known absolute path = identity key (docs §2.4)
     name,
     folderName,
     versions,
     latestVersion: latest,
     modifiedMs: latest ? latest.mtimeMs : 0,
-    exports
+    exports,
+    alsFiles: alsFilesOf(files) // per-file signature {stem,size} (docs §2.1)
   }
 }
 

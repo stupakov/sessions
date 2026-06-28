@@ -28,7 +28,11 @@ A quick self-check before committing main-process changes:
 grep -rnE "writeFile|appendFile|mkdir|rmdir|unlink|rename|rm\(|copyFile|chmod|utimes|truncate|createWriteStream|symlink" src/main/
 ```
 
-The only legitimate "writes" are SQL statements against the app's own SQLite DB.
+The only legitimate "writes" are SQL statements against the app's own SQLite DB, plus
+the single `unlinkSync(dbPath…)` in `db.js` `resetDb()` that deletes the app's own DB
+(and its `-wal`/`-shm`) under `userData` when an incompatible schema is detected — never
+a music path. The `RO-2` test (`test/identity-integration.test.js`) enforces exactly this
+allowlist against `src/main/`.
 
 ## Architecture (quick map)
 
@@ -45,6 +49,15 @@ The only legitimate "writes" are SQL statements against the app's own SQLite DB.
   `window.api` is undefined and all IPC silently fails.
 - **`better-sqlite3`** is native; if `npm install` fails to build it (very new Node),
   use `npm run setup`. See README.
+- **Tests run under Electron's Node runtime**, not the system Node: `npm test` launches
+  Vitest inside Electron via `scripts/run-tests.mjs` (resolves the Electron binary + the
+  Vitest CLI from `node_modules` and runs them with `ELECTRON_RUN_AS_NODE=1`). This is the
+  app's *actual* runtime. `better-sqlite3` is compiled for Electron's module ABI (132, via
+  `electron-rebuild`) — an Electron-specific ABI that matches **no** standalone Node release
+  (Node 20=115, 22=127, 24=137), so a plain `vitest run` on the system Node can't load the
+  same native binary the app ships. The runner forwards args (`npm test -- <files>`) and
+  propagates the exit code. The pure scanner/signature/reconcile tests don't touch SQLite
+  and would pass under any Node.
 
 ## Conventions
 

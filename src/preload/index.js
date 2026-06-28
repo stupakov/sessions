@@ -5,9 +5,16 @@ const api = {
   setSettings: (patch) => ipcRenderer.invoke('settings:set', patch),
 
   list: (relPath) => ipcRenderer.invoke('fs:list', relPath),
+  listAll: () => ipcRenderer.invoke('fs:listAll'),
   setProjectMeta: (relPath, patch) => ipcRenderer.invoke('meta:set', relPath, patch),
   statusCounts: () => ipcRenderer.invoke('meta:statusCounts'),
   applyStatusChanges: (changes) => ipcRenderer.invoke('meta:applyStatusChanges', changes),
+
+  // Identity / reconciliation (docs §6).
+  reconcile: () => ipcRenderer.invoke('meta:reconcile'),
+  locateCandidates: (metaId) => ipcRenderer.invoke('meta:locateCandidates', metaId),
+  associate: (metaId, absPath, opts) => ipcRenderer.invoke('meta:associate', metaId, absPath, opts),
+  detach: (metaId) => ipcRenderer.invoke('meta:detach', metaId),
 
   selectRoot: () => ipcRenderer.invoke('dialog:selectRoot'),
   selectApp: () => ipcRenderer.invoke('dialog:selectApp'),
@@ -24,6 +31,13 @@ const api = {
     const handler = (_e, entry) => cb(entry)
     ipcRenderer.on('debug:log', handler)
     return () => ipcRenderer.removeListener('debug:log', handler)
+  },
+
+  // macOS back/forward swipe gesture → 'back' | 'forward'. Returns an unsubscribe fn.
+  onNavSwipe: (cb) => {
+    const handler = (_e, dir) => cb(dir)
+    ipcRenderer.on('nav:swipe', handler)
+    return () => ipcRenderer.removeListener('nav:swipe', handler)
   }
 }
 
