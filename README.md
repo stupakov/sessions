@@ -27,12 +27,21 @@ See [`docs/`](./docs) for the design and the Ableton-folder research.
 ## Requirements
 
 - **macOS**
-- **Node.js 20 LTS or 22 LTS** (includes npm). These have prebuilt `better-sqlite3`
+- **Node.js 22 LTS** (includes npm 10). The exact pinned version lives in
+  [`.tool-versions`](./.tool-versions) (asdf) and [`.nvmrc`](./.nvmrc) (nvm/fnm), and
+  `package.json` `engines` enforces it. Node 22 ships prebuilt `better-sqlite3`
   binaries, so install just works.
-  - ⚠️ Very new Node (e.g. 25+) can't compile the native SQLite module from source.
-    If you're on such a version, use `npm run setup` (below) — it builds the module
-    against Electron's bundled Node instead, sidestepping the issue. (Switching to an
-    LTS via `nvm` is the simpler fix.)
+  - ⚠️ **Don't build with a too-new Node (23+, e.g. 26).** Two things break: (1) the
+    native SQLite module can't compile against newer V8 headers from source, and
+    (2) npm 11 added an `allow-scripts` gate that silently skips the native rebuild.
+    The repo's `.npmrc` sets `engine-strict=true`, so a wrong toolchain now **fails
+    immediately** with a clear `EBADENGINE` message instead of a cryptic gyp crash.
+  - **Get the pinned Node automatically:**
+    - asdf: `asdf install` (reads `.tool-versions`)
+    - nvm: `nvm install` then `nvm use` (reads `.nvmrc`)
+    - fnm: `fnm use --install-if-missing`
+    If you use asdf, make sure its shims win in your `PATH` (e.g. don't keep a
+    Homebrew `node` linked that shadows them — `brew unlink node`).
 
 ## Install on a Mac (from a copy of this repo)
 
@@ -42,6 +51,7 @@ Do this on each machine — it builds the app for that machine's architecture
 ```bash
 cd ableton-song-manager      # the copied/cloned repo
 
+asdf install                 # or: nvm install && nvm use  — get the pinned Node 22
 npm install                  # installs deps; rebuilds SQLite for Electron
 npm run install:mac          # builds Sessions.app and installs it to /Applications
 ```
@@ -51,12 +61,15 @@ macOS may warn it's from an unidentified developer (the app is built locally and
 unsigned) — right-click the app → **Open** once to allow it.
 
 Notes for a fresh machine:
-- Requires **Node.js 20 LTS or 22 LTS** (see Requirements above). Don't copy
+- Requires the **pinned Node 22 LTS** (see Requirements above). Don't copy
   `node_modules` between machines — run `npm install` fresh so the native SQLite
   module is built for that machine. If you copied it by accident:
   `rm -rf node_modules && npm install`.
-- If `npm install` fails building the native SQLite module (only on very new Node),
-  use `npm run setup` instead, then re-run `npm run install:mac`.
+- If `npm install` errors with `EBADENGINE`, your Node/npm doesn't match the pin —
+  run `asdf install` / `nvm use` first (see Requirements).
+- As a last resort (e.g. no prebuilt SQLite binary for your platform), `npm run setup`
+  installs deps without scripts and rebuilds SQLite against Electron's Node, then
+  re-run `npm run install:mac`.
 - Your data (DB + settings) lives in `~/Library/Application Support/ableton-song-manager`
   on each machine; it is **per-machine** and not synced.
 
