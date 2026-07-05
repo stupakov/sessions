@@ -269,7 +269,7 @@ describe('read-only invariant (RO)', () => {
     // and SQL identifiers like `renameStmt.run(` are not false positives. Extends the
     // CLAUDE.md self-check.
     const WRITE_OPS =
-      /\b(writeFile|writeFileSync|appendFile|mkdir|mkdirSync|rmdir|unlink|unlinkSync|rename|renameSync|rm|copyFile|chmod|utimes|truncate|createWriteStream|symlink)\s*\(/
+      /\b(writeFile|writeFileSync|appendFile|mkdir|mkdirSync|rmdir|unlink|unlinkSync|rename|renameSync|rm|copyFile|copyFileSync|chmod|utimes|truncate|createWriteStream|symlink)\s*\(/
     const files = []
     function collect(d) {
       for (const e of readdirSync(d, { withFileTypes: true })) {
@@ -288,8 +288,12 @@ describe('read-only invariant (RO)', () => {
         .forEach((line, i) => {
           const code = line.replace(/\/\/.*$/, '') // drop line comments
           if (!WRITE_OPS.test(code)) return
-          // The ONLY allowed write is resetDb()'s unlink of the userData DB file.
-          const allowed = rel.endsWith('main/db.js') && code.includes('unlinkSync(dbPath')
+          // Allowed writes, all inside our own app-data dir (never the music root):
+          //  - resetDb()'s unlink of the userData DB file (db.js)
+          //  - the one-time legacy data-dir migration into `dataDir` (index.js)
+          const allowed =
+            (rel.endsWith('main/db.js') && code.includes('unlinkSync(dbPath')) ||
+            (rel.endsWith('main/index.js') && /dataDir/.test(code))
           if (!allowed) offenders.push(`${rel}:${i + 1}: ${line.trim()}`)
         })
     }

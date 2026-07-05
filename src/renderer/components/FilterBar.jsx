@@ -1,4 +1,5 @@
-import { FolderTree, List, Star, X } from 'lucide-react'
+import { useState } from 'react'
+import { FolderTree, List, Star, X, Search } from 'lucide-react'
 import { statusColor } from '../lib/statusColors.js'
 import { cn } from '../lib/utils.js'
 
@@ -13,12 +14,16 @@ export default function FilterBar({
   onToggleStatus,
   minRating,
   onMinRating,
+  search,
+  onSearch,
   onClear,
   count,
   total
 }) {
-  const filtersActive = selectedStatuses.length > 0 || minRating > 0
+  const [searchOpen, setSearchOpen] = useState(false)
+  const filtersActive = selectedStatuses.length > 0 || minRating > 0 || !!search
   const isSel = (v) => selectedStatuses.includes(v)
+  const showSearch = searchOpen || !!search
 
   return (
     <div className="flex select-none flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-border bg-white px-4 py-1.5 text-xs">
@@ -45,6 +50,44 @@ export default function FilterBar({
           <List className="h-3.5 w-3.5" /> All projects
         </button>
       </div>
+
+      {/* Search titles: a loupe that expands to an input; the ✕ clears (then closes). */}
+      {showSearch ? (
+        <div className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1">
+          <Search className="h-3.5 w-3.5 text-muted-foreground" />
+          <input
+            autoFocus
+            value={search}
+            onChange={(e) => onSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                onSearch('')
+                setSearchOpen(false)
+              }
+            }}
+            placeholder="Search titles…"
+            className="w-40 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
+          />
+          <button
+            onClick={() => {
+              if (search) onSearch('')
+              else setSearchOpen(false)
+            }}
+            title={search ? 'Clear search' : 'Close'}
+            className="rounded p-0.5 hover:bg-muted"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setSearchOpen(true)}
+          title="Search titles"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border hover:bg-muted"
+        >
+          <Search className="h-3.5 w-3.5" />
+        </button>
+      )}
 
       <span className="text-muted-foreground">Status:</span>
       <div className="flex flex-wrap items-center gap-1">

@@ -43,6 +43,7 @@ export default function App() {
   const [allProjects, setAllProjects] = useState([]) // flat-mode: every project in the library
   const [selectedStatuses, setSelectedStatuses] = useState([]) // [] = all; null entry = "No status"
   const [minRating, setMinRating] = useState(0) // 0 = any
+  const [search, setSearch] = useState('') // title substring filter (both view modes)
 
   // Folder-browser navigation history (for back/forward — 3-finger swipe, ⌘[ / ⌘],
   // and the toolbar arrows). `stack` is the visited cwd paths; `index` is the cursor.
@@ -150,6 +151,7 @@ export default function App() {
   const clearFilters = useCallback(() => {
     setSelectedStatuses([])
     setMinRating(0)
+    setSearch('')
   }, [])
 
   // Full identity reconcile pass — persists rebinds/duplicates and collects the
@@ -335,12 +337,14 @@ export default function App() {
   // the status/rating filters applied to whichever set that is.
   const baseProjects = viewMode === 'flat' ? allProjects : projects
   const visibleProjects = useMemo(() => {
+    const q = search.trim().toLowerCase()
     return baseProjects.filter((p) => {
+      if (q && !p.name.toLowerCase().includes(q)) return false
       if (minRating > 0 && (p.meta.rating || 0) < minRating) return false
       if (selectedStatuses.length > 0 && !selectedStatuses.includes(p.meta.status || null)) return false
       return true
     })
-  }, [baseProjects, minRating, selectedStatuses])
+  }, [baseProjects, minRating, selectedStatuses, search])
 
   // Breadcrumb segments from the current relative path.
   const crumbs = useMemo(() => {
@@ -396,6 +400,8 @@ export default function App() {
           onToggleStatus={toggleStatus}
           minRating={minRating}
           onMinRating={setMinRating}
+          search={search}
+          onSearch={setSearch}
           onClear={clearFilters}
           count={visibleProjects.length}
           total={baseProjects.length}

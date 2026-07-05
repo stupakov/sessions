@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { createReadStream, statSync } from 'node:fs'
+import { createReadStream, statSync, existsSync, mkdirSync, copyFileSync } from 'node:fs'
 import { Readable } from 'node:stream'
 import { app, shell, BrowserWindow, protocol, dialog } from 'electron'
 import { initDb, resetDb, setSettings } from './db.js'
@@ -15,10 +15,31 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 // the packaged Sessions.app shows "Sessions" correctly.
 app.setName('Sessions')
 app.setAboutPanelOptions({ applicationName: 'Sessions', applicationVersion: app.getVersion() })
-// Pin the data dir to a stable internal id so renaming the app never moves the
-// DB/config and it survives upgrades. userData =>
-// ~/Library/Application Support/ableton-song-manager/
-app.setPath('userData', path.join(app.getPath('appData'), 'ableton-song-manager'))
+
+// App data lives in ~/Library/Application Support/Sessions/. Older (pre-0.3.0) builds
+// used "ableton-song-manager"; migrateLegacyDataDir() copies that DB across once so
+// existing installs keep their statuses/ratings/notes/settings. These writes only ever
+// touch our own app-data dir (never the read-only music root).
+const dataDir = path.join(app.getPath('appData'), 'Sessions')
+const legacyDataDir = path.join(app.getPath('appData'), 'ableton-song-manager')
+app.setPath('userData', dataDir)
+
+function migrateLegacyDataDir() {
+  const legacyDb = path.join(legacyDataDir, 'songlist.db')
+  const newDb = path.join(dataDir, 'songlist.db')
+  if (existsSync(newDb) || !existsSync(legacyDb)) return // already migrated, or nothing to migrate
+  try {
+    mkdirSync(dataDir, { recursive: true })
+    // Copy (not move) so the old dir remains as a backup; WAL/SHM come along if present.
+    for (const f of ['songlist.db', 'songlist.db-wal', 'songlist.db-shm']) {
+      const src = path.join(legacyDataDir, f)
+      if (existsSync(src)) copyFileSync(src, path.join(dataDir, f))
+    }
+    mlog('info', `migrated app data: ${legacyDataDir} -> ${dataDir}`)
+  } catch (e) {
+    mlog('error', `app-data migration failed: ${e.message}`)
+  }
+}
 
 // Privileged scheme for streaming local audio into the renderer's in-app player —
 // seekable (HTTP Range), no full-file read, no weakening of webSecurity/CSP.
@@ -84,6 +105,7 @@ if (!gotLock) {
   })
 
   app.whenReady().then(() => {
+    migrateLegacyDataDir() // one-time copy from the pre-0.3.0 data dir, before opening the DB
     // Schema-version gate (docs §3.2). An incompatible (old/newer) project_meta
     // schema can't be read by this pre-release; offer Reset/Quit before any window.
     let schema = initDb()

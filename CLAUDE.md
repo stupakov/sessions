@@ -1,4 +1,4 @@
-# CLAUDE.md — Ableton Song Manager
+# CLAUDE.md — Sessions
 
 Project guidance for AI assistants working in this repo. See `docs/` for the full
 design and Ableton-folder research.

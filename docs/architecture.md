@@ -41,19 +41,23 @@ stays true on every change.
 ## Storage location & upgrade safety
 
 All app state lives in **`app.getPath('userData')`**, which on macOS is
-`~/Library/Application Support/ableton-song-manager/` — the canonical place for
-per-app data. It contains `songlist.db` (+ `-wal`/`-shm` WAL sidecars).
+`~/Library/Application Support/Sessions/` — the canonical place for per-app data. It
+contains `songlist.db` (+ `-wal`/`-shm` WAL sidecars).
 
 This directory lives **outside** the `.app` bundle, so it **survives app upgrades
 and re-installs** (replacing/reinstalling the `.app` never touches it). Data is only
 lost if the user deletes that folder or the app's *name* changes.
 
 To keep the location stable, `main/index.js` sets the display name with
-`app.setName('Sessions')` but then **explicitly pins** the data dir with
-`app.setPath('userData', join(app.getPath('appData'), 'ableton-song-manager'))`.
-The explicit `setPath` overrides any name-derived default, so the display name can
-change (and packaged `productName` can differ from dev) without ever moving the
-DB/config. Dev and packaged share one stable DB forever.
+`app.setName('Sessions')` and **explicitly pins** the data dir with
+`app.setPath('userData', join(app.getPath('appData'), 'Sessions'))`. The explicit
+`setPath` overrides any name-derived default, so the packaged `productName` can differ
+from dev without ever moving the DB/config. Dev and packaged share one stable DB forever.
+
+Pre-0.3.0 builds pinned this to `ableton-song-manager`; `migrateLegacyDataDir()` in
+`main/index.js` copies that DB into the `Sessions` dir once on first launch (only if the
+new dir has no DB yet), so existing installs keep their data. The copy — like the
+incompatible-DB reset — writes only inside our own app-data dir, never the music root.
 
 A **single-instance lock** (`app.requestSingleInstanceLock()`) prevents two app
 instances from opening the same DB and clobbering each other's settings.

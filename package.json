@@ -1,7 +1,7 @@
 {
-  "name": "ableton-song-manager",
-  "version": "0.2.0",
-  "description": "Read-only manager for a folder of Ableton Live projects",
+  "name": "sessions",
+  "version": "0.3.0",
+  "description": "Sessions — a read-only manager for a folder of Ableton Live projects",
   "author": "Alex Stupakov",
   "license": "MIT",
   "private": false,

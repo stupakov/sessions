@@ -1,4 +1,4 @@
-# Ableton Song Manager
+# Sessions
 
 A personal macOS desktop app that indexes a folder of Ableton Live projects
 **read-only**, lists them in a sortable table, tracks per-song metadata (status,
@@ -7,7 +7,7 @@ and play exported WAV/MP3 files.
 
 > Single-user, local-only. The app **never writes** to your Ableton projects folder —
 > it only observes it. All app data (SQLite db + settings) lives in the OS app-data
-> directory (`~/Library/Application Support/ableton-song-manager`).
+> directory (`~/Library/Application Support/Sessions`).
 
 ## Features
 
@@ -49,7 +49,7 @@ Do this on each machine — it builds the app for that machine's architecture
 (works on both Apple Silicon and Intel).
 
 ```bash
-cd ableton-song-manager      # the copied/cloned repo
+cd sessions                  # the copied/cloned repo
 
 asdf install                 # or: nvm install && nvm use  — get the pinned Node 22
 npm install                  # installs deps; rebuilds SQLite for Electron
@@ -70,7 +70,7 @@ Notes for a fresh machine:
 - As a last resort (e.g. no prebuilt SQLite binary for your platform), `npm run setup`
   installs deps without scripts and rebuilds SQLite against Electron's Node, then
   re-run `npm run install:mac`.
-- Your data (DB + settings) lives in `~/Library/Application Support/ableton-song-manager`
+- Your data (DB + settings) lives in `~/Library/Application Support/Sessions`
   on each machine; it is **per-machine** and not synced.
 
 ### Updating the installed app after code changes
@@ -99,6 +99,35 @@ npm run build        # bundle main+preload+renderer into ./out (no packaging)
 npm run pack:mac     # build Sessions.app into ./dist (no install, no .dmg)
 npm run dist         # build a distributable .dmg in ./dist
 ```
+
+## Release notes
+
+### 0.3.0
+
+- **Project identity & reconciliation** — per-project metadata (status / rating /
+  notes) now follows a project across **move, rename, duplicate, and delete**, using a
+  read-only content signature. Projects whose folder can't be found show as **missing**
+  with a **Locate…** browser to re-link them. See
+  [docs/project-identity-and-reconciliation.md](./docs/project-identity-and-reconciliation.md).
+- **Views & filters** — a **Folders ⇄ All projects** mode toggle (flat list of the whole
+  library), **status** and **minimum-rating** filters, and a **title search** (loupe in
+  the filter bar). Filters apply to the current folder or the whole library depending on
+  mode.
+- **Back / forward navigation** — macOS **3-finger swipe**, **⌘[ / ⌘]**, and toolbar
+  arrows move through folder history (Folders mode).
+- Default status **"Mastery" → "Mastering"**.
+
+**⚠️ App-data location changed (automatic migration).** App data now lives in
+`~/Library/Application Support/Sessions` (previously `…/ableton-song-manager`). On the
+**first launch of 0.3.0**, Sessions automatically **copies** your existing database
+(statuses, ratings, notes, and settings) into the new location — **no action needed**,
+nothing is lost.
+
+- The migration only runs if the new location has no database yet, so it's safe to run
+  repeatedly and won't clobber newer data.
+- The old `…/ableton-song-manager` folder is **left in place as a backup**; once you've
+  confirmed everything looks right, you can delete it manually.
+- Fresh installs (no prior data) are unaffected — they just start in the new location.
 
 ## How it identifies projects, versions, and exports
 
